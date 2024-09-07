@@ -1,0 +1,12 @@
+#!/bin/bash
+
+USER_ID=$(id -u)
+GROUP_ID=$(id -g)
+
+docker run ${moinsit} --rm \
+  --volume $PWD:/app \
+  --user "$USER_ID:$GROUP_ID" \
+  -ti \
+  --name composer-running-script \
+  -v "$PWD":/usr/src \
+  composer:2.5.5 composer "$@"

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+PHP_IMAGE_NAME=php-multi-tenant
+USER_ID=$(id -u)
+GROUP_ID=$(id -g)
+
+docker run \
+    --init \
+    --rm \
+    -ti \
+    --name "$PHP_IMAGE_NAME-running-script" \
+    -v "$PWD":"$PWD" \
+    --user "$USER_ID:$GROUP_ID" \
+    -w "$PWD" \
+    $PHP_IMAGE_NAME php "$@"

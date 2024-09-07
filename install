@@ -1,0 +1,10 @@
+#!/bin/bash
+
+#DIR_VAR=var
+#if [ ! -d "$DIR_VAR" ]; then
+#    mkdir $DIR_VAR
+#fi
+
+docker build -t php-multi-tenant:latest docker/php
+
+#bin/composer install

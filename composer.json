@@ -1,0 +1,43 @@
+{
+    "name": "phariscope/multitenant",
+    "type": "library",
+    "description": "Multitenant components.",
+    "keywords": ["tenant", "multitenant", "multi-tenant"],
+    "homepage": "https://github.com/phariscope/MultiTenant",
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "authors": [
+        {
+            "name": "Frédéric Royet",
+            "email": "frederic.royet@logipro.com",
+            "homepage": "https://www.linkedin.com/in/frederic-royet-42568566/",
+            "role": "Project Founder"
+        }
+    ],
+    "require": {
+        "php": ">=8.2"
+    },
+    "require-dev": {
+        "infection/extension-installer": "0.1.2",
+        "infection/infection": "^0.29",
+        "phpstan/phpdoc-parser": "^1.30",
+        "phpstan/phpstan": "^1.12",
+        "phpunit/phpunit": "^11",
+        "squizlabs/php_codesniffer": "3.*"
+    },
+    "autoload": {
+        "psr-4" : {
+            "Phariscope\\MultiTenant\\" : "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4" : {
+            "Phariscope\\MultiTenant\\Tests\\" : "tests/unit"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "infection/extension-installer": true
+        }
+    }
+}

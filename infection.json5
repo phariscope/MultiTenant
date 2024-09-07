@@ -1,0 +1,22 @@
+{
+    "$schema": "vendor/infection/infection/resources/schema.json",
+    "source": {
+        "directories": [
+            "src"
+        ]
+    },
+    "logs": {
+        "text": "var/infection.log",
+        "html": "var/infection.html",
+        "summary": "var/summary.log",
+        "json": "var/infection-log.json",
+        "perMutator": "var/per-mutator.md",
+        "stryker": {
+            "badge": "/^release-.*$/"
+        }
+    },
+    "mutators": {
+        "@default": true
+    },
+    "timeout": 20
+}
