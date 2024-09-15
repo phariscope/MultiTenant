@@ -1,0 +1,16 @@
+#!bin/php
+<?php
+
+if (!is_file(dirname(__DIR__).'/vendor/autoload.php')) {
+    throw new LogicException('Symfony Runtime is missing. Try running "composer require symfony/runtime".');
+}
+
+require_once dirname(__DIR__).'/vendor/autoload.php';
+
+use Symfony\Component\Console\Application;
+
+$application = new Application();
+
+// ... register commands
+
+$application->run();

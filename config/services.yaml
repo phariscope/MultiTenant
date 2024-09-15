@@ -1,0 +1,6 @@
+services:
+    Phariscope\Multitenant\Command\CreateTenantDatabaseCommand:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+        tags:
+            - { name: 'console.command' }

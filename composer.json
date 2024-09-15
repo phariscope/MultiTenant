@@ -5,7 +5,7 @@
     "keywords": ["tenant", "multitenant", "multi-tenant"],
     "homepage": "https://github.com/phariscope/MultiTenant",
     "license": "MIT",
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "authors": [
         {
             "name": "Frédéric Royet",
@@ -15,7 +15,10 @@
         }
     ],
     "require": {
-        "php": ">=8.2"
+        "php": ">=8.2",
+        "symfony/orm-pack": "^2.4",
+        "symfony/console": "^7.0 || 7.1",
+        "phariscope/safephp": "^1.0"
     },
     "require-dev": {
         "infection/extension-installer": "0.1.2",
@@ -38,6 +41,13 @@
     "config": {
         "allow-plugins": {
             "infection/extension-installer": true
+        }
+    },
+    "extra": {
+        "symfony": {
+            "resources": {
+                "config": "config/"
+            }
         }
     }
 }
