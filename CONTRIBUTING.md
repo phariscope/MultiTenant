@@ -26,7 +26,7 @@ cd MultiTenant
 * docker >=24
 * git
 
-## Unit test
+## Unit tests
 
 ```console
 bin/phpunit
@@ -34,6 +34,18 @@ bin/phpunit
 
 Using Test-Driven Development (TDD) principles (thanks to Kent Beck and others), following good practices (thanks to Uncle Bob and others) and the great book 'DDD in PHP' by C. Buenosvinos, C. Soronellas, K. Akbary
 
+## Integration tests
+
+First start infrastructures with a MariaDB conainer server.
+```console
+./start
+```
+
+Then run integration tests
+
+```console
+bin/phpunit-integration
+```
 
 ## Quality
 

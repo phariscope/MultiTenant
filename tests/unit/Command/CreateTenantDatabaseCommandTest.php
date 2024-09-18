@@ -4,7 +4,7 @@ namespace Phariscope\MultiTenant\Tests\Commmand;
 
 use Doctrine\ORM\EntityManager;
 use Phariscope\MultiTenant\Command\CreateTenantDatabaseCommand;
-use Phariscope\MultiTenant\Tests\Doctrine\FakeEntityManagerFactory;
+use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeEntityManagerFactory;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Console\Application;

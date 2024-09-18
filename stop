@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 function init_docker_userid_groupid() {
     USERID=$(id -u)
     export USERID
@@ -9,4 +8,4 @@ function init_docker_userid_groupid() {
 }
 
 init_docker_userid_groupid
-docker compose build php
+USERID=$USERID GROUPID=$GROUPID docker compose down

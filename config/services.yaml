@@ -1,6 +1,14 @@
 services:
-    Phariscope\Multitenant\Command\CreateTenantDatabaseCommand:
-        arguments:
-            $entityManager: '@doctrine.orm.entity_manager'
-        tags:
-            - { name: 'console.command' }
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Phariscope\MultiTenant\:
+        resource: '../src/'
+        exclude:
+            - '../src/Symfony/Kernel.php'
+
+    Phariscope\MultiTenant\Command\CreateTenantDatabaseCommand:
+        tags: ['console.command']
+        autowire: true    # active l'autowiring
+        autoconfigure: true # active l'autoconfiguration

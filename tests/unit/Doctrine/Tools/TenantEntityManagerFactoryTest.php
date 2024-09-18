@@ -1,10 +1,10 @@
 <?php
 
-namespace Phariscope\MultiTenant\Tests\Doctrine;
+namespace Phariscope\MultiTenant\Tests\Doctrine\Tools;
 
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManager;
-use Phariscope\MultiTenant\Doctrine\MultiTenantEntityManager;
+use Phariscope\MultiTenant\Doctrine\Tools\TenantEntityManagerFactory;
 use PHPUnit\Framework\TestCase;
 
 use function SafePHP\strval;
@@ -12,7 +12,7 @@ use function SafePHP\strval;
 /**
  * @psalm-import-type Params from DriverManager
  */
-class MultiTenantEntityManagerTest extends TestCase
+class TenantEntityManagerFactoryTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -20,12 +20,14 @@ class MultiTenantEntityManagerTest extends TestCase
         (new FakeEntityManagerFactory())->cleanSqliteDatabase();
     }
 
-    public function testCreateTenantSqliteEntityManager(): void
+    public function testCreateSqliteEntityManager(): void
     {
         $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
-        $sut = (new MultiTenantEntityManager($em))->create('tenant123');
-        $this->assertEquals(true, $sut instanceof EntityManager);
-        $params = $sut->getConnection()->getParams();
+        $sut = new TenantEntityManagerFactory();
+        $result = $sut->createSqliteEntityManager($em, 'tenant123');
+
+        $this->assertEquals(true, $result instanceof EntityManager);
+        $params = $result->getConnection()->getParams();
         $this->assertStringEndsWith('databases/tenant123/database.sqlite', strval($this->getParam($params, 'path')));
         $this->assertEquals('pdo_sqlite', $this->getParam($params, 'driver'));
     }
@@ -45,33 +47,37 @@ class MultiTenantEntityManagerTest extends TestCase
     public function testCreateTenantMariadbEntityManager(): void
     {
         $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
-        $sut = (new MultiTenantEntityManager($em))->create('tenant123');
-        $params = $sut->getConnection()->getParams();
-        $this->assertEquals(true, $sut instanceof EntityManager);
+        $sut = new TenantEntityManagerFactory();
+        $result = $sut->createMariadbEntityManager($em, 'tenant123');
+
+        $params = $result->getConnection()->getParams();
+        $this->assertEquals(true, $result instanceof EntityManager);
         $this->assertEquals('mydbname_tenant123', $this->getParam($params, 'dbname'));
         $this->assertEquals('pdo_mysql', $this->getParam($params, 'driver'));
-        $this->assertEquals('user', $this->getParam($params, 'user'));
+        $this->assertEquals('root', $this->getParam($params, 'user'));
         $this->assertEquals('password', $this->getParam($params, 'password'));
         $this->assertEquals('10.11.5-MariaDB', $this->getParam($params, 'serverVersion'));
         $this->assertEquals('utf8mb4', $this->getParam($params, 'charset'));
     }
 
-    public function testCreateTenantDatabase(): void
+    public function testSqliteMemoryException(): void
     {
-        $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
-        $sut = new MultiTenantEntityManager($em);
-        $sut->createDatabase('tenant123');
-        $this->assertFileExists(getcwd() . '/var/tmp/data/databases/tenant123/database.sqlite');
-    }
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('SQlite Memory database is not supported');
 
-    public function testCreateTenantDatabaseWithAutdodectingTenant(): void
-    {
-        $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
-        $_REQUEST['tenant_id'] = 'tenant321';
-        $sut = (new MultiTenantEntityManager($em))->create();
-        $this->assertEquals(true, $sut instanceof EntityManager);
-        $params = $sut->getConnection()->getParams();
-        $this->assertStringEndsWith('databases/tenant321/database.sqlite', strval($this->getParam($params, 'path')));
-        $this->assertEquals('pdo_sqlite', $this->getParam($params, 'driver'));
+        $em = (new FakeEntityManagerFactory())->createSqliteInMemoryEntityManager();
+        $sut = new TenantEntityManagerFactory();
+        $sut->createSqliteEntityManager($em, 'tenant123');
     }
+/*
+        public function testSqlitePathException(): void
+        {
+            $this->expectException(\RuntimeException::class);
+            $this->expectExceptionMessage("Unable to create directory 'not/existing/directory'");
+
+        $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
+        $sut = new TenantEntityManagerFactory();
+        $sut->createSqliteEntityManager($em, 'tent*');
+    }
+        */
 }

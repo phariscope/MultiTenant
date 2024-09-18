@@ -1,0 +1,45 @@
+services:
+  php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    restart: no
+    user:
+      ${USERID}:${GROUPID}
+    volumes:
+      - "$PWD:$PWD"
+    working_dir: $PWD
+    networks:
+      - ${COMPOSE_PROJECT_NAME}-network
+
+  mariadb:
+    image: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    networks:
+      - ${COMPOSE_PROJECT_NAME}-network
+
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    environment:
+      PMA_HOST: mariadb
+    depends_on:
+      - mariadb
+    ports:
+      - "8080:80"
+    networks:
+      - ${COMPOSE_PROJECT_NAME}-network
+
+networks:
+  multitenant-network:
+    name: "${COMPOSE_PROJECT_NAME}-network"
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fdfe:1:2a::/112
+          gateway: fdfe:1:2a::1

@@ -1,16 +1,17 @@
 #!bin/php
 <?php
 
-if (!is_file(dirname(__DIR__).'/vendor/autoload.php')) {
-    throw new LogicException('Symfony Runtime is missing. Try running "composer require symfony/runtime".');
-}
+use Phariscope\MultiTenant\Symfony\Kernel;
+use Symfony\Bundle\FrameworkBundle\Console\Application;
+use Symfony\Component\Dotenv\Dotenv;
 
-require_once dirname(__DIR__).'/vendor/autoload.php';
+require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
 
-use Symfony\Component\Console\Application;
+// Charge les variables d'environnement depuis src/Symfony/.env
+(new Dotenv())->bootEnv(dirname(__DIR__).'/src/Symfony/.env');
 
-$application = new Application();
+return function (array $context) {
+    $kernel = new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
 
-// ... register commands
-
-$application->run();
+    return new Application($kernel);
+};

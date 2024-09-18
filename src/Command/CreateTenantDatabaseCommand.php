@@ -3,8 +3,8 @@
 namespace Phariscope\MultiTenant\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Phariscope\MultiTenant\Doctrine\MultiTenantEntityManager;
-use Symfony\Component\Console\Attribute\AsCommand;
+use Phariscope\MultiTenant\Doctrine\DatabaseTools;
+use Phariscope\MultiTenant\Doctrine\EntityManagerResolver;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -13,14 +13,13 @@ use Symfony\Component\Console\Exception\RuntimeException;
 
 use function SafePHP\strval;
 
-#[AsCommand(name: 'tenant:database:create')]
 class CreateTenantDatabaseCommand extends Command
 {
-    private MultiTenantEntityManager $entityManager;
+    private EntityManagerResolver $entityManagerResolver;
 
     public function __construct(EntityManagerInterface $entityManager)
     {
-        $this->entityManager = new MultiTenantEntityManager($entityManager);
+        $this->entityManagerResolver = new EntityManagerResolver($entityManager);
         parent::__construct();
     }
 
@@ -41,7 +40,9 @@ class CreateTenantDatabaseCommand extends Command
         }
 
         try {
-            $this->entityManager->createDatabase($tenantId);
+            $databaseTools = new DatabaseTools();
+            $tenantEntityManager = $this->entityManagerResolver->getEntityManager($tenantId);
+            $databaseTools->createDatabase($tenantEntityManager);
             $output->writeln('<info>Database for tenant "' . $tenantId . '" created successfully.</info>');
         } catch (\Exception $e) {
             $output->writeln(
