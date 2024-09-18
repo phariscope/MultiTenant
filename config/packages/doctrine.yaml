@@ -1,7 +1,17 @@
 doctrine:
   dbal:
     url: "%env(resolve:DATABASE_URL)%"
+
   orm:
     auto_generate_proxy_classes: true
     naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
     auto_mapping: true
+    enable_lazy_ghost_objects: true
+    controller_resolver:
+      auto_mapping: true
+    mappings:
+      PhariscopeMultiTenant:
+        is_bundle: false
+        type: xml
+        dir: "%kernel.project_dir%/tests/unit/Doctrine/Tools/resources/mapping"
+        prefix: 'Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeModel'

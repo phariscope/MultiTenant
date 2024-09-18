@@ -42,4 +42,21 @@ class DatabaseToolsTest extends TestCase
 
         throw new \InvalidArgumentException(ucfirst($key) . ' not found');
     }
+
+    public function testDatabaseExists(): void
+    {
+        $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
+        $sut = new DatabaseTools();
+
+        $sut->createDatabase($em);
+        $this->assertTrue($sut->databaseExists($em));
+    }
+
+    public function testDatabaseDoesNotExist(): void
+    {
+        $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
+        $sut = new DatabaseTools();
+
+        $this->assertFalse($sut->databaseExists($em));
+    }
 }

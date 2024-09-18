@@ -7,6 +7,8 @@ use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\Driver\XmlDriver;
+use Doctrine\ORM\ORMSetup;
+use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeModel\FakeEntity;
 use Symfony\Component\Filesystem\Filesystem;
 
 class FakeEntityManagerFactory
@@ -34,23 +36,23 @@ class FakeEntityManagerFactory
 
     private function createEntityManager(Connection $connection): EntityManager
     {
-        $config = new Configuration();
-        $mappingDriver = new XmlDriver(
-            [
-                __DIR__ . '/../../../../../../src/Domain/Model',
-            ]
-        );
-        $config->setMetadataDriverImpl(
-            $mappingDriver
-        );
+        //$config = new Configuration();
+
+        $paths = [
+            __DIR__ . '/resources/mapping',
+        ];
+        $config = ORMSetup::createXMLMetadataConfiguration($paths, true);
         $config->setProxyDir(
-            __DIR__ . '/../../../../../../var/proxies'
+            __DIR__ . '/../../../../var/proxies'
         );
         $config->setProxyNamespace('Proxies');
-        return new EntityManager(
+        $em = new EntityManager(
             $connection,
             $config
         );
+        $driverImpl = new XmlDriver([__DIR__ . '/resources/mapping']);
+        $config->setMetadataDriverImpl($driverImpl);
+        return $em;
     }
 
     public function createSqliteInMemoryEntityManager(): EntityManager

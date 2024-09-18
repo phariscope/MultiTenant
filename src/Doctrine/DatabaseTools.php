@@ -3,6 +3,8 @@
 namespace Phariscope\MultiTenant\Doctrine;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Driver\PDO\PDOException;
+use Doctrine\DBAL\Exception\ConnectionException;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Doctrine\ORM\EntityManagerInterface;
 use Phariscope\MultiTenant\Doctrine\Tools\ParamsConnection;
@@ -50,5 +52,32 @@ class DatabaseTools
             $newConnection = new Connection($params, $connection->getDriver());
             $newConnection->createSchemaManager()->createDatabase($dbname);
         }
+    }
+
+    public function createSchema(EntityManagerInterface $em): void
+    {
+        $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($em);
+        $classes = $em->getMetadataFactory()->getAllMetadata();
+        $schemaTool->createSchema($classes);
+    }
+
+    public function databaseExists(EntityManagerInterface $em): bool
+    {
+        $connection = $em->getConnection();
+        $driver = $connection->getDriver()->getDatabasePlatform();
+        if ($driver instanceof SqlitePlatform) {
+            $params = $connection->getParams();
+            $path = strval(ParamsConnection::getParam($params, 'path'));
+            return file_exists($path);
+        }
+
+        $params = $connection->getParams();
+        $schema = $connection->createSchemaManager();
+        try {
+            $schema->listDatabases();
+        } catch (ConnectionException $e) {
+            return false;
+        }
+        return true;
     }
 }
