@@ -1,0 +1,5 @@
+services:
+    Phariscope\MultiTenant\Command\CreateTenantDatabaseCommand:
+        tags: ['console.command']
+        autowire: true
+        autoconfigure: true

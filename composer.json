@@ -1,6 +1,6 @@
 {
     "name": "phariscope/multitenant",
-    "type": "library",
+    "type": "symfony-bundle",
     "description": "Multitenant components.",
     "keywords": ["tenant", "multitenant", "multi-tenant"],
     "homepage": "https://github.com/phariscope/MultiTenant",
