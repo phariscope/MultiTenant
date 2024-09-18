@@ -7,6 +7,7 @@ use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Phariscope\MultiTenant\Doctrine\Tools\TenantEntityManagerFactory;
 use Phariscope\MultiTenant\Doctrine\Tools\TenantManager;
+use Symfony\Component\HttpFoundation\Request;
 
 class EntityManagerResolver
 {
@@ -17,18 +18,18 @@ class EntityManagerResolver
         $this->wrapped = $wrapped;
     }
 
-    public function getEntityManager(?string $tenantId = null): EntityManagerInterface
+    public function getEntityManager(null|string|Request $tenantId = null): EntityManagerInterface
     {
-        $tenantId ??= $this->findTenantIdIfExist();
+        $tenantId ??= $this->findTenantIdIfExist($tenantId);
         if ($tenantId !== null) {
             return $this->createEntityManagerForTenant($tenantId);
         }
         return $this->wrapped;
     }
 
-    private function findTenantIdIfExist(): ?string
+    private function findTenantIdIfExist(null|string|Request $tenantId): ?string
     {
-        $tenantManager = new TenantManager();
+        $tenantManager = new TenantManager($tenantId);
         return $tenantManager->getCurrentTenantId();
     }
 

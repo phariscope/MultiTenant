@@ -4,6 +4,7 @@ namespace Phariscope\MultiTenant\Tests\Doctrine\Tools;
 
 use PHPUnit\Framework\TestCase;
 use Phariscope\MultiTenant\Doctrine\Tools\TenantManager;
+use Symfony\Component\HttpFoundation\Request;
 
 class TenantManagerTest extends TestCase
 {
@@ -94,5 +95,45 @@ class TenantManagerTest extends TestCase
         $tenantId = $this->tenantManager->getCurrentTenantId();
 
         $this->assertNull($tenantId);
+    }
+
+    public function testGetTenantIdFromSymfonyQuery(): void
+    {
+        $request = new Request(['tenant_id' => 'tenant_from_symfony_request']);
+
+        $sut = new TenantManager($request);
+        $tenantId = $sut->getCurrentTenantId();
+
+        $this->assertEquals('tenant_from_symfony_request', $tenantId);
+    }
+
+    public function testGetTenantIdFromSymfonyRequestPost(): void
+    {
+        $request = new Request([], ['tenant_id' => 'tenant_from_post_request']);
+
+        $sut = new TenantManager($request);
+        $tenantId = $sut->getCurrentTenantId();
+
+        $this->assertEquals('tenant_from_post_request', $tenantId);
+    }
+
+    public function testGetTenantIdFromSymfonyRequestCookie(): void
+    {
+        $request = new Request([], [], [], ['tenant_id' => 'tenant_from_cookie_request']);
+
+        $sut = new TenantManager($request);
+        $tenantId = $sut->getCurrentTenantId();
+
+        $this->assertEquals('tenant_from_cookie_request', $tenantId);
+    }
+
+    public function testGetTenantIdFromSymfonyRequestHeader(): void
+    {
+        $request = new Request([], [], [], [], [], ['HTTP_X_TENANT_ID' => 'tenant_from_header_request']);
+
+        $sut = new TenantManager($request);
+        $tenantId = $sut->getCurrentTenantId();
+
+        $this->assertEquals('tenant_from_header_request', $tenantId);
     }
 }
