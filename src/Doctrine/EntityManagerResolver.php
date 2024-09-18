@@ -18,21 +18,20 @@ class EntityManagerResolver
         $this->wrapped = $wrapped;
     }
 
-    public function getEntityManager(null|string|Request $tenantId = null): EntityManagerInterface
+    public function getEntityManager(?string $tenantId = null): EntityManagerInterface
     {
-        $tenantId ??= $this->findTenantIdIfExist($tenantId);
+        $tenantId ??= $this->findTenantIdIfExist();
         if ($tenantId !== null) {
             return $this->createEntityManagerForTenant($tenantId);
         }
         return $this->wrapped;
     }
 
-    private function findTenantIdIfExist(null|string|Request $tenantId): ?string
+    private function findTenantIdIfExist(): ?string
     {
-        $tenantManager = new TenantManager($tenantId);
+        $tenantManager = new TenantManager();
         return $tenantManager->getCurrentTenantId();
     }
-
 
     private function createEntityManagerForTenant(string $tenantId): EntityManager
     {
@@ -43,5 +42,12 @@ class EntityManagerResolver
             return $factory->createSqliteEntityManager($this->wrapped, $tenantId);
         }
         return $factory->createMariadbEntityManager($this->wrapped, $tenantId);
+    }
+
+    public function getEntityManagerByRequest(Request $request): EntityManagerInterface
+    {
+        $tenantManager = new TenantManager($request);
+        $tenantId = $tenantManager->getCurrentTenantId();
+        return $this->getEntityManager($tenantId);
     }
 }

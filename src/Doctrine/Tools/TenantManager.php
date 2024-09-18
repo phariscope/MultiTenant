@@ -10,7 +10,7 @@ class TenantManager
 {
     private ?Request $request = null;
 
-    public function __construct(null|string|Request $request = null)
+    public function __construct(?Request $request = null)
     {
         if ($request instanceof Request) {
             $this->request = $request;

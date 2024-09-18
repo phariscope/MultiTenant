@@ -30,11 +30,6 @@ In a Symfony controller, follow these steps:
 For example, assuming you have a `tenant_id` in your request or session:
 
 ```php
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
-use Phariscope\MultiTenant\EntityManagerResolver;
 
 class YourController extends AbstractController
 {
@@ -48,7 +43,7 @@ class YourController extends AbstractController
     {
         $tenantEntityManager = $this->entityManagerResolver->getEntityManager();
 
-        $this->repository ??= $tenantEntityManager->getRepository(SomeEntity::class);
+        $this->repository ??= $tenantEntityManager->getEntityManagerByRequest(SomeEntity::class);
 
         // Your code here...
     }

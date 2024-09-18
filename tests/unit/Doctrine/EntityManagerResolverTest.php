@@ -3,11 +3,11 @@
 namespace Phariscope\MultiTenant\Tests\Doctrine;
 
 use Doctrine\DBAL\DriverManager;
-use Doctrine\ORM\EntityManager;
 use Phariscope\MultiTenant\Doctrine\EntityManagerResolver;
 use Phariscope\MultiTenant\Doctrine\Tools\ParamsConnection;
 use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeEntityManagerFactory;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\Request;
 
 use function SafePHP\strval;
 
@@ -32,7 +32,9 @@ class EntityManagerResolverTest extends TestCase
         }
         $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
         $sut = new EntityManagerResolver($em);
+
         $result = $sut->getEntityManager();
+
         $this->assertEquals($em, $result);
         $params = $result->getConnection()->getParams();
         $this->assertStringEndsWith(
@@ -45,7 +47,9 @@ class EntityManagerResolverTest extends TestCase
     {
         $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
         $sut = new EntityManagerResolver($em);
+
         $result = $sut->getEntityManager('tenant123');
+
         $params = $result->getConnection()->getParams();
         $this->assertStringEndsWith(
             'databases/tenant123/database.sqlite',
@@ -56,9 +60,26 @@ class EntityManagerResolverTest extends TestCase
     public function testAnotherDriverThanSQLite(): void
     {
         $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
+
         $sut = new EntityManagerResolver($em);
+
         $result = $sut->getEntityManager('tenant123');
         $params = $result->getConnection()->getParams();
         $this->assertEquals('mydbname_tenant123', ParamsConnection::getParam($params, 'dbname'));
+    }
+
+    public function testGetEntityManagerByRequest(): void
+    {
+        $request = new Request(['tenant_id' => 'tenant123']);
+        $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
+        $sut = new EntityManagerResolver($em);
+
+        $result = $sut->getEntityManagerByRequest($request);
+
+        $params = $result->getConnection()->getParams();
+        $this->assertStringEndsWith(
+            'databases/tenant123/database.sqlite',
+            strval(ParamsConnection::getParam($params, 'path'))
+        );
     }
 }

@@ -27,6 +27,7 @@ class DatabaseToolsTest extends TestCase
     {
         $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
         $sut = new DatabaseTools();
+
         $sut->createDatabase($em);
 
         $params = $em->getConnection()->getParams();
