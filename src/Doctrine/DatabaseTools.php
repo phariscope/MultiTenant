@@ -8,6 +8,7 @@ use Doctrine\DBAL\Exception\ConnectionException;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Doctrine\ORM\EntityManagerInterface;
 use Phariscope\MultiTenant\Doctrine\Tools\ParamsConnection;
+use PhpParser\Builder\Param;
 
 use function Safe\mkdir;
 use function Safe\touch;
@@ -79,5 +80,24 @@ class DatabaseTools
             return false;
         }
         return true;
+    }
+
+    public function dropDatabase(EntityManagerInterface $em): void
+    {
+        $connection = $em->getConnection();
+        $driver = $connection->getDriver()->getDatabasePlatform();
+        if ($driver instanceof SqlitePlatform) {
+            $params = $connection->getParams();
+            $path = strval(ParamsConnection::getParam($params, 'path'));
+            if (file_exists($path)) {
+                unlink($path);
+            }
+            return;
+        }
+
+        $params = $connection->getParams();
+        $dbname = strval(ParamsConnection::getParam($params, 'dbname'));
+        $newConnection = new Connection($params, $connection->getDriver());
+        $newConnection->createSchemaManager()->dropDatabase($dbname);
     }
 }

@@ -54,4 +54,15 @@ class DatabaseToolsTest extends TestCase
         $sut->createDatabase($em);
         $this->assertTrue($sut->databaseExists($em));
     }
+
+    public function testDatabaseDrop(): void
+    {
+        $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
+        $sut = new DatabaseTools();
+
+        $sut->createDatabase($em);
+        $sut->dropDatabase($em);
+
+        $this->assertFalse($sut->databaseExists($em));
+    }
 }
