@@ -1,45 +1,66 @@
 
-Insert multitenacy capabilities in your projetcs without (lots of) code modfication
-# Install with composer
+# Multitenancy made easy for your projects
 
-```
+Easily add multitenancy capabilities to your Symfony projects without (too much) code modification.
+
+## Installation
+
+Install the package using Composer:
+
+```bash
 composer require phariscope/multitenant
 ```
 
-# Usage
+You can use Multitenant as a Symfony bundle. Simply add one line to your `config/bundles.php` file:
 
-In a Symfony controller :
-* inject EntityManagerResolver in constructor parameters
-* in the routing function get the tenant entity
-
-For instance, assuming you have a 'tenant_id' value somewhere in your request or session.
 ```php
+return [
+    // other bundles
+
+    Phariscope\MultiTenant\MultiTenantBundle::class => ['all' => true],
+];
+```
+
+## Usage
+
+In a Symfony controller, follow these steps:
+1. Inject `EntityManagerResolver` into your controller’s constructor.
+2. Retrieve the tenant-specific entity manager within your route action.
+
+For example, assuming you have a `tenant_id` in your request or session:
+
+```php
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+use Phariscope\MultiTenant\EntityManagerResolver;
 
 class YourController extends AbstractController
 {
     public function __construct(
-        private EntityManagerInterface $entityManagerResolver,
-        // you need repository ?
+        private EntityManagerResolver $entityManagerResolver,
         private ?SomeEntityRepositoryInterface $repository = null
+    ) {}
 
-    ) {
-    }
-
-    #[Route('your/route', 'runYourRoute', methods: ['POST', 'GET'])]
+    #[Route('your/route', name: 'runYourRoute', methods: ['POST', 'GET'])]
     public function runYourRoute(Request $request): Response
     {
         $tenantEntityManager = $this->entityManagerResolver->getEntityManager();
 
         $this->repository ??= $tenantEntityManager->getRepository(SomeEntity::class);
 
-        // ...
+        // Your code here...
     }
+}
 ```
 
-Create a tenant database with console
+## Creating a Tenant Database
 
-For instance, we want to create a database for tenant 'tenantID1234' (assume you have a correctly implemented console)
+To create a database for a specific tenant (e.g., `tenantID1234`), you can use the console command:
 
-```
+```bash
 bin/console tenant:database:create tenantID1234
 ```
+
+Ensure you have the necessary console setup to handle tenant operations.
