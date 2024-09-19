@@ -26,6 +26,8 @@ return [
 In a Symfony controller, follow these steps:
 1. Inject `EntityManagerResolver` into your controller’s constructor.
 2. Retrieve the tenant-specific entity manager within your route action.
+3. create database and schema for a tenant if database does not exist for this tenant
+4. Enjoy...
 
 For example, assuming you have a `tenant_id` in your request or session:
 
@@ -35,15 +37,15 @@ class YourController extends AbstractController
 {
     public function __construct(
         private EntityManagerResolver $entityManagerResolver,
-        private ?SomeEntityRepositoryInterface $repository = null
     ) {}
 
     #[Route('your/route', name: 'runYourRoute', methods: ['POST', 'GET'])]
     public function runYourRoute(Request $request): Response
     {
-        $tenantEntityManager = $this->entityManagerResolver->getEntityManager();
+        $tenantEntityManager = $this->entityManagerResolver->getEntityManagerByRequest($request);
+        (new DatabaseTools())->createDatabaseIfNotExists($entityManager);
 
-        $this->repository ??= $tenantEntityManager->getEntityManagerByRequest(SomeEntity::class);
+        $repository = new YourSomeEntityDoctrineRepository($tenantEntityManager);
 
         // Your code here...
     }

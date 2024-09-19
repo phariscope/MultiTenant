@@ -65,4 +65,16 @@ class DatabaseToolsTest extends TestCase
 
         $this->assertFalse($sut->databaseExists($em));
     }
+
+    public function testCreateDatabaseIfNotExists(): void
+    {
+        $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
+        $sut = new DatabaseTools();
+
+        $sut->createDatabaseIfNotExists($em);
+
+        $params = $em->getConnection()->getParams();
+        $path = strval(ParamsConnection::getParam($params, 'path'));
+        $this->assertStringEndsWith(FakeEntityManagerFactory::SQLITE_DATABASE_PATH, $path);
+    }
 }

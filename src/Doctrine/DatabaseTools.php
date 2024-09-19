@@ -3,12 +3,10 @@
 namespace Phariscope\MultiTenant\Doctrine;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\PDO\PDOException;
 use Doctrine\DBAL\Exception\ConnectionException;
 use Doctrine\DBAL\Platforms\SqlitePlatform;
 use Doctrine\ORM\EntityManagerInterface;
 use Phariscope\MultiTenant\Doctrine\Tools\ParamsConnection;
-use PhpParser\Builder\Param;
 
 use function Safe\mkdir;
 use function Safe\touch;
@@ -99,5 +97,13 @@ class DatabaseTools
         $dbname = strval(ParamsConnection::getParam($params, 'dbname'));
         $newConnection = new Connection($params, $connection->getDriver());
         $newConnection->createSchemaManager()->dropDatabase($dbname);
+    }
+
+    public function createDatabaseIfNotExists(EntityManagerInterface $entityManager): void
+    {
+        if (!$this->databaseExists($entityManager)) {
+            $this->createDatabase($entityManager);
+            $this->createSchema($entityManager);
+        }
     }
 }

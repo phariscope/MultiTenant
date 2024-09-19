@@ -4,6 +4,7 @@ namespace Phariscope\MultiTenant\Tests\Integration\Doctrine;
 
 use Doctrine\DBAL\DriverManager;
 use Phariscope\MultiTenant\Doctrine\DatabaseTools;
+use Phariscope\MultiTenant\Doctrine\Tools\ParamsConnection;
 use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeEntityManagerFactory;
 use PHPUnit\Framework\TestCase;
 
@@ -69,5 +70,16 @@ class DatabaseToolsTest extends TestCase
         $sut->dropDatabase($em);
 
         $this->assertFalse($sut->databaseExists($em));
+    }
+
+    public function testCreateDatabaseIfNotExists(): void
+    {
+        $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
+        $sut = new DatabaseTools();
+
+        $sut->createDatabaseIfNotExists($em);
+
+        $params = $em->getConnection()->getParams();
+        $this->assertEquals(FakeEntityManagerFactory::MARIADB_DATABASE_NAME, $this->getParam($params, 'dbname'));
     }
 }
