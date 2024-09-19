@@ -26,7 +26,7 @@ class CreateTenantDatabaseCommand extends Command
     protected function configure(): void
     {
         $this
-            ->setName('tenant:database:create') // Nom explicite de la commande
+            ->setName('tenant:database:create')
             ->setDescription('Creates a new database for a tenant.')
             ->addArgument('tenant_id', InputArgument::REQUIRED, 'The ID of the tenant');
     }
@@ -34,10 +34,6 @@ class CreateTenantDatabaseCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $tenantId = strval($input->getArgument('tenant_id'));
-
-        if (!$tenantId) {
-            throw new RuntimeException('Tenant ID is required.');
-        }
 
         try {
             $databaseTools = new DatabaseTools();

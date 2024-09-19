@@ -12,3 +12,8 @@ services:
         tags: ['console.command']
         autowire: true
         autoconfigure: true
+
+    Phariscope\MultiTenant\Command\CreateTenantSchemaCommand:
+        tags: ['console.command']
+        autowire: true
+        autoconfigure: true

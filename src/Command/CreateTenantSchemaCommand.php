@@ -35,19 +35,15 @@ class CreateTenantSchemaCommand extends Command
     {
         $tenantId = strval($input->getArgument('tenant_id'));
 
-        if (!$tenantId) {
-            throw new RuntimeException('Tenant ID is required.');
-        }
-
         try {
             $databaseTools = new DatabaseTools();
             $tenantEntityManager = $this->entityManagerResolver->getEntityManager($tenantId);
             $databaseTools->createSchema($tenantEntityManager);
-            $output->writeln('<info>Database for tenant "' . $tenantId . '" created successfully.</info>');
+            $output->writeln('<info>Schema for tenant "' . $tenantId . '" created successfully.</info>');
         } catch (\Exception $e) {
             $output->writeln(
                 sprintf(
-                    '<error>Could not create database for tenant "%s": %s</error>',
+                    '<error>Could not create schema for tenant "%s": %s</error>',
                     $tenantId,
                     $e->getMessage()
                 )

@@ -8,13 +8,8 @@ use function SafePHP\strval;
 
 class TenantManager
 {
-    private ?Request $request = null;
-
-    public function __construct(?Request $request = null)
+    public function __construct(private ?Request $request = null)
     {
-        if ($request instanceof Request) {
-            $this->request = $request;
-        }
     }
 
     public function getCurrentTenantId(): ?string

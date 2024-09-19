@@ -10,7 +10,6 @@ use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeEntityManagerFactory;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Console\Application;
-use Symfony\Component\Filesystem\Filesystem;
 
 class CreateTenantSchemaCommandTest extends TestCase
 {
@@ -58,7 +57,30 @@ class CreateTenantSchemaCommandTest extends TestCase
     {
         $output = $this->commandTester->getDisplay();
         $this->assertStringContainsString(
-            'Database for tenant "' . $expectedTenantId . '" created successfully.',
+            'Schema for tenant "' . $expectedTenantId . '" created successfully.',
+            $output
+        );
+    }
+
+    public function testSchemaAlreadyExists(): void
+    {
+        $tenantId = 'tenant123';
+        $this->createDatabaseForTenant($tenantId);
+        $emTenant = (new EntityManagerResolver($this->em))->getEntityManager($tenantId);
+        (new DatabaseTools())->createSchema($emTenant);
+
+        $this->commandTester->execute([
+            'tenant_id' => $tenantId,
+        ]);
+
+        $this->assertConsoleFailureOutput($tenantId);
+    }
+
+    private function assertConsoleFailureOutput(string $expectedTenantId): void
+    {
+        $output = $this->commandTester->getDisplay();
+        $this->assertStringContainsString(
+            'Could not create schema for tenant "' . $expectedTenantId,
             $output
         );
     }

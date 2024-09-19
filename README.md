@@ -54,10 +54,20 @@ class YourController extends AbstractController
 
 ## Creating a Tenant Database
 
+Ensure you have the necessary console setup to handle tenant operations.
+
 To create a database for a specific tenant (e.g., `tenantID1234`), you can use the console command:
 
 ```bash
 bin/console tenant:database:create tenantID1234
 ```
 
-Ensure you have the necessary console setup to handle tenant operations.
+## Creating a Schema for a tenant database
+
+Once you have created a tenant database, you can create its schema.
+
+You can use the console command:
+
+```bash
+bin/console tenant:schema:create tenantID1234
+```
