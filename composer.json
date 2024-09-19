@@ -9,19 +9,18 @@
     "authors": [
         {
             "name": "Frédéric Royet",
-            "email": "frederic.royet@logipro.com",
             "homepage": "https://www.linkedin.com/in/frederic-royet-42568566/",
             "role": "Project Founder"
         }
     ],
     "require": {
         "php": ">=8.2",
-        "symfony/orm-pack": "^2.4",
+        "symfony/orm-pack": "^2.4 || ^5.4 || ^6.0 || ^7.0",
         "phariscope/safephp": "^1.0",
-        "symfony/dotenv": "^7.1",
-        "symfony/yaml": "^7.1",
-        "symfony/runtime": "^7.1",
-        "doctrine/cache": "^2.2"
+        "symfony/dotenv": "^5.4 || ^6.0 || ^7.0",
+        "symfony/yaml": "^5.4 || ^6.0 || ^7.0",
+        "symfony/runtime": "^5.4 || ^6.0 || ^7.0",
+        "doctrine/cache": "^1.11 || ^2.0"
     },
     "require-dev": {
         "infection/extension-installer": "0.1.2",
