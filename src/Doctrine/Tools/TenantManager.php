@@ -19,39 +19,28 @@ class TenantManager
         }
 
         if (isset($_REQUEST['tenant_id'])) {
-            /** @var string $res */
-            $res = $_REQUEST['tenant_id'];
-            return $res;
+            return strval($_REQUEST['tenant_id']);
         }
 
         if (isset($_GET['tenant_id'])) {
-            /** @var string $res */
-            $res = $_GET['tenant_id'];
-            return $res;
+            return strval($_GET['tenant_id']);
         }
 
         if (isset($_POST['tenant_id'])) {
-            /** @var string $res */
-            $res = $_POST['tenant_id'];
-            return $res;
+            return strval($_POST['tenant_id']);
         }
 
         if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['tenant_id'])) {
-            /** @var string $res */
-            $res = $_SESSION['tenant_id'];
-            return $res;
+            return strval($_SESSION['tenant_id']);
         }
 
         if (isset($_SERVER['HTTP_X_TENANT_ID'])) {
-            /** @var string $res */
             $res = $_SERVER['HTTP_X_TENANT_ID'];
-            return $res;
+            return strval($_SERVER['HTTP_X_TENANT_ID']);
         }
 
         if (isset($_COOKIE['tenant_id'])) {
-            /** @var string $res */
-            $res = $_COOKIE['tenant_id'];
-            return $res;
+            return strval($_COOKIE['tenant_id']);
         }
 
         return null;
