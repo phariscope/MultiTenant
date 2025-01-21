@@ -3,7 +3,7 @@
 bin/php vendor/bin/phpcbf --standard=PSR12 ./src ./tests
 bin/php vendor/bin/phpcs --standard=PSR12 ./src ./tests
 
-bin/php vendor/bin/phpstan analyse --level=9 ./src
-bin/php vendor/bin/phpstan analyse --level=9 ./tests
+bin/php vendor/bin/phpstan analyse --level=10 ./src
+bin/php vendor/bin/phpstan analyse --level=10 ./tests
 
 bin/phpunit --testsuite all

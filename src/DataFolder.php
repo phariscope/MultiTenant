@@ -6,11 +6,15 @@ class DataFolder implements DataFolderPathInterface
 {
     public function getDataRootFolder(): string
     {
-        return $_ENV["DATA_PATH"];
+        /** @var string $data_path */
+        $data_path = $_ENV["DATA_PATH"];
+        return $data_path;
     }
 
     public function getTenantDataFolder(): string
     {
-        return sprintf("%s/%s", $this->getDataRootFolder(), $_ENV["TENANT_ID"]);
+        /** @var string $tid */
+        $tid = $_ENV["TENANT_ID"];
+        return sprintf("%s/%s", $this->getDataRootFolder(), $tid);
     }
 }

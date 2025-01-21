@@ -26,7 +26,6 @@ class TenantEntityManagerFactoryTest extends TestCase
         $sut = new TenantEntityManagerFactory();
         $result = $sut->createSqliteEntityManager($em, 'tenant123');
 
-        $this->assertEquals(true, $result instanceof EntityManager);
         $params = $result->getConnection()->getParams();
         $this->assertStringEndsWith('databases/tenant123/database.sqlite', strval($this->getParam($params, 'path')));
         $this->assertEquals('pdo_sqlite', $this->getParam($params, 'driver'));
@@ -51,7 +50,6 @@ class TenantEntityManagerFactoryTest extends TestCase
         $result = $sut->createMariadbEntityManager($em, 'tenant123');
 
         $params = $result->getConnection()->getParams();
-        $this->assertEquals(true, $result instanceof EntityManager);
         $this->assertEquals('mydbname_tenant123', $this->getParam($params, 'dbname'));
         $this->assertEquals('pdo_mysql', $this->getParam($params, 'driver'));
         $this->assertEquals('root', $this->getParam($params, 'user'));

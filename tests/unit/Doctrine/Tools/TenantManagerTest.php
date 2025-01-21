@@ -21,7 +21,9 @@ class TenantManagerTest extends TestCase
         $_POST = [];
         $_SESSION = [];
         $_COOKIE = [];
-        $this->server = $_SERVER;
+        /** @var array<string,mixed> $server */
+        $server = $_SERVER;
+        $this->server = $server;
         $_SERVER = [];
     }
 
