@@ -34,8 +34,9 @@ class DatabaseToolsTest extends TestCase
 
     /**
      * @psalm-param Params $params
+     * @return mixed
      */
-    private function getParam(array $params, string $key): mixed
+    private function getParam(array $params, string $key)
     {
         if (isset($params[$key])) {
             return $params[$key];

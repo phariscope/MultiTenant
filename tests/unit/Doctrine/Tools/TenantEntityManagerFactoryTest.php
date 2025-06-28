@@ -9,6 +9,8 @@ use PHPUnit\Framework\TestCase;
 
 use function SafePHP\strval;
 
+// Removed SafePHP dependency for PHP 7.4 compatibility
+
 /**
  * @psalm-import-type Params from DriverManager
  */
@@ -34,8 +36,9 @@ class TenantEntityManagerFactoryTest extends TestCase
 
     /**
      * @psalm-param Params $params
+     * @return mixed
      */
-    private function getParam(array $params, string $key): mixed
+    private function getParam(array $params, string $key)
     {
         if (isset($params[$key])) {
             return $params[$key];

@@ -11,9 +11,13 @@ use Doctrine\ORM\ORMSetup;
 use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeModel\FakeEntity;
 use Symfony\Component\Filesystem\Filesystem;
 
+use function Safe\mkdir;
+
 class FakeEntityManagerFactory
 {
-    public const SQLITE_DATABASE_PATH = '/var/tmp/data/database.sqlite';
+    public const SQLITE_DATABASE_PATH = '/var/tmp/data/';
+
+    public const SQLITE_DATABASE_NAME = 'database.sqlite';
 
     public const MARIADB_DATABASE_NAME = 'mydbname';
 
@@ -25,10 +29,11 @@ class FakeEntityManagerFactory
 
     public function createSqliteEntityManager(): EntityManager
     {
+        mkdir(getcwd() . self::SQLITE_DATABASE_PATH, 0777, true);
         $connection = DriverManager::getConnection(
             [
                 'driver' => 'pdo_sqlite',
-                'path' => getcwd() . self::SQLITE_DATABASE_PATH,
+                'path' => getcwd() . self::SQLITE_DATABASE_PATH . self::SQLITE_DATABASE_NAME,
             ]
         );
         return $this->createEntityManager($connection);

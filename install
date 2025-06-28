@@ -8,5 +8,11 @@ function init_docker_userid_groupid() {
     export GROUPID
 }
 
+function build_docker_image() {
+    docker compose build php
+    docker build -t composer-multitenant docker/composer/
+}
+
 init_docker_userid_groupid
-docker compose build php
+
+build_docker_image

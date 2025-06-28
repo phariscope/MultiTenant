@@ -19,8 +19,11 @@ class TenantEntityManagerFactory
     public function createSqliteEntityManager(
         EntityManagerInterface $em,
         string $tenantId,
-        Filesystem $filesystem = new Filesystem()
+        Filesystem $filesystem = null
     ): EntityManager {
+        if ($filesystem === null) {
+            $filesystem = new Filesystem();
+        }
         $connection = $em->getConnection();
 
         $params = $connection->getParams();

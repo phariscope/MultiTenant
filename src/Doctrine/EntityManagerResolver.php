@@ -20,7 +20,9 @@ class EntityManagerResolver
 
     public function getEntityManager(?string $tenantId = null): EntityManagerInterface
     {
-        $tenantId ??= $this->findTenantIdIfExist();
+        if ($tenantId === null) {
+            $tenantId = $this->findTenantIdIfExist();
+        }
         if ($tenantId !== null) {
             return $this->createEntityManagerForTenant($tenantId);
         }

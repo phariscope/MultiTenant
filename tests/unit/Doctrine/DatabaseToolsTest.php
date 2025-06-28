@@ -32,7 +32,8 @@ class DatabaseToolsTest extends TestCase
 
         $params = $em->getConnection()->getParams();
         $path = strval(ParamsConnection::getParam($params, 'path'));
-        $this->assertStringEndsWith(FakeEntityManagerFactory::SQLITE_DATABASE_PATH, $path);
+        $this->assertStringEndsWith(FakeEntityManagerFactory::SQLITE_DATABASE_PATH .
+            FakeEntityManagerFactory::SQLITE_DATABASE_NAME, $path);
     }
 
     public function testCreateSchema(): void
@@ -75,6 +76,7 @@ class DatabaseToolsTest extends TestCase
 
         $params = $em->getConnection()->getParams();
         $path = strval(ParamsConnection::getParam($params, 'path'));
-        $this->assertStringEndsWith(FakeEntityManagerFactory::SQLITE_DATABASE_PATH, $path);
+        $this->assertStringEndsWith(FakeEntityManagerFactory::SQLITE_DATABASE_PATH .
+            FakeEntityManagerFactory::SQLITE_DATABASE_NAME, $path);
     }
 }

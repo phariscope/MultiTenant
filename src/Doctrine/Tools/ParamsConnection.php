@@ -11,8 +11,9 @@ class ParamsConnection
 {
     /**
      * @psalm-param Params $params
+     * @return mixed
      */
-    public static function getParam(array $params, string $key): mixed
+    public static function getParam(array $params, string $key)
     {
         if (isset($params[$key])) {
             return $params[$key];

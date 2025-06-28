@@ -8,8 +8,26 @@ use function SafePHP\strval;
 
 class TenantManager
 {
-    public function __construct(private ?Request $request = null)
+    private ?Request $request;
+
+    /** @var array<string, mixed> */
+    private array $session;
+
+    /**
+     * @param array<string, mixed> $session
+     */
+    public function __construct(?Request $request = null, ?array $session = null)
     {
+        $this->request = $request;
+        if ($session === null) {
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                $this->session = $_SESSION;
+            } else {
+                $this->session = [];
+            }
+        } else {
+            $this->session = $session;
+        }
     }
 
     public function getCurrentTenantId(): ?string
@@ -30,8 +48,8 @@ class TenantManager
             return $_POST['tenant_id'];
         }
 
-        if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['tenant_id'])) {
-            return $_SESSION['tenant_id'];
+        if (isset($this->session['tenant_id'])) {
+            return strval($this->session['tenant_id']);
         }
 
         if (isset($_SERVER['HTTP_X_TENANT_ID'])) {
@@ -48,15 +66,15 @@ class TenantManager
     private function getTenantIdFromRequest(Request $request): ?string
     {
         if ($request->query->has('tenant_id')) {
-            return strval($request->query->get('tenant_id'));
+            return (string) $request->query->get('tenant_id');
         }
 
         if ($request->request->has('tenant_id')) {
-            return strval($request->request->get('tenant_id'));
+            return (string) $request->request->get('tenant_id');
         }
 
         if ($request->cookies->has('tenant_id')) {
-            return strval($request->cookies->get('tenant_id'));
+            return (string) $request->cookies->get('tenant_id');
         }
 
         if ($request->headers->has('X-Tenant-Id')) {

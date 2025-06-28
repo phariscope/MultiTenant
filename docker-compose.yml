@@ -3,9 +3,8 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    restart: no
-    user:
-      ${USERID}:${GROUPID}
+    restart: "no"
+    user: "${USERID}:${GROUPID}"
     volumes:
       - "$PWD:$PWD"
     working_dir: $PWD

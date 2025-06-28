@@ -8,8 +8,11 @@ class PathTransformer
 
     private const ARRAY_SPLICE_DO_NOT_REMOVE_FILENAME = 0;
 
-    public function __construct(private string $pathRoot = '')
+    private string $pathRoot;
+
+    public function __construct(string $pathRoot = '')
     {
+        $this->pathRoot = $pathRoot;
     }
 
     public function transform(string $path, string $tenantId): string

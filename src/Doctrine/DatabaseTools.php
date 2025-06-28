@@ -14,7 +14,7 @@ use function SafePHP\strval;
 
 class DatabaseTools
 {
-    private const SQLITE_DIRECTORY_MODE = 0755;
+    private const SQLITE_DIRECTORY_MODE = 0777;
     public function createDatabase(EntityManagerInterface $em): void
     {
         $connection = $em->getConnection();
