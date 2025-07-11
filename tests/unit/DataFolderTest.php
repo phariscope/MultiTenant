@@ -19,6 +19,6 @@ class DataFolderTest extends TestCase
         $_ENV["DATA_PATH"] = "/var/data";
         $_ENV["TENANT_ID"] = "tenant1";
         $dataFolder = new DataFolder();
-        $this->assertEquals('/var/data/tenant1', $dataFolder->getTenantDataFolder());
+        $this->assertEquals('/var/data/tenants/tenant1', $dataFolder->getTenantDataFolder());
     }
 }

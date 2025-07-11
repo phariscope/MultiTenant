@@ -64,9 +64,10 @@ class TenantManagerTest extends TestCase
 
     public function testGetTenantIdFromSession(): void
     {
-        session_start();
-        $_SESSION['tenant_id'] = 'tenant_from_session';
+        $MOCK_SESSION = [];
+        $MOCK_SESSION['tenant_id'] = 'tenant_from_session';
 
+        $this->tenantManager = new TenantManager(null, $MOCK_SESSION);
         $tenantId = $this->tenantManager->getCurrentTenantId();
 
         $this->assertEquals('tenant_from_session', $tenantId);
