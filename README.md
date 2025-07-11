@@ -3,7 +3,15 @@
 
 Easily add multitenancy capabilities to your Symfony projects without (too much) code modification.
 
-## Installation
+# Installation
+
+## Prerequisites
+
+We assume you have a DATA_PATH environment variable to store all data, including database data and other data types such as files.
+
+We assume you have a DATABASE_URL environment variable containing the general path to your database.
+
+## Install
 
 Install the package using Composer:
 
@@ -21,7 +29,7 @@ return [
 ];
 ```
 
-## Usage
+# Usage
 
 In a Symfony controller, follow these steps:
 1. Inject `EntityManagerResolver` into your controller’s constructor.
@@ -52,7 +60,7 @@ class YourController extends AbstractController
 }
 ```
 
-## Creating a Tenant Database
+# Creating a Tenant Database
 
 Ensure you have the necessary console setup to handle tenant operations.
 
@@ -62,7 +70,7 @@ To create a database for a specific tenant (e.g., `tenantID1234`), you can use t
 bin/console tenant:database:create tenantID1234
 ```
 
-## Creating a Schema for a tenant database
+# Creating a Schema for a tenant database
 
 Once you have created a tenant database, you can create its schema.
 
@@ -71,3 +79,16 @@ You can use the console command:
 ```bash
 bin/console tenant:schema:create tenantID1234
 ```
+
+# How it works
+
+A "tenants" subfolder will be created in the DATA_PATH. For each tenant, a specific folder will be created containing all the data, including the database.
+
+For example:
+DATA_PATH=./var/data
+DATABASE_URL=sqlite:///%DATA_PATH%/database/mydatabase.sqlite
+
+Given the tenant "tenantID1234", the database create command will create the following file:
+./var/data/tenants/tenantID1234/database/mydatabase.sqlite
+
+The "./var/data/tenants/tenantID1234" folder will contain all the data required for your project.
