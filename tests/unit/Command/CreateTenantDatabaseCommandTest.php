@@ -1,6 +1,6 @@
 <?php
 
-namespace Phariscope\MultiTenant\Tests\Commmand;
+namespace Phariscope\MultiTenant\Tests\Command;
 
 use Doctrine\ORM\EntityManager;
 use Phariscope\MultiTenant\Command\CreateTenantDatabaseCommand;
@@ -21,6 +21,12 @@ class CreateTenantDatabaseCommandTest extends TestCase
         (new FakeEntityManagerFactory())->cleanSqliteDatabase();
         $this->em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
         $this->commandTester = $this->createCommandTester();
+        $_ENV['DATA_PATH'] = FakeEntityManagerFactory::DATA_PATH;
+    }
+
+    protected function tearDown(): void
+    {
+        (new FakeEntityManagerFactory())->cleanSqliteDatabase();
     }
 
     private function createCommandTester(): CommandTester
@@ -43,8 +49,8 @@ class CreateTenantDatabaseCommandTest extends TestCase
 
         $this->assertConsoleSuccessOutput($tenantId);
 
-        // Vérifier si la base de données a bien été créée
-        $dbPath = getcwd() . '/var/tmp/data/databases/' . $tenantId . '/database.sqlite';
+        // Vérifier si la base de données a bien été créée avec la nouvelle structure
+        $dbPath = getcwd() . '/var/tmp/data/myApp/tenants/' . $tenantId . '/subfolder/database.sqlite';
         $this->assertTrue(file_exists($dbPath));
     }
 
@@ -59,18 +65,24 @@ class CreateTenantDatabaseCommandTest extends TestCase
 
     public function testExecuteFailureDatabaseAlreadyExists(): void
     {
+        // Arrange
         $tenantId = 'tenant123';
-        $tenantDbPath = getcwd() . '/var/tmp/data/databases/' . $tenantId . '/database.sqlite';
+        $tenantDbPath = getcwd() . '/var/tmp/data/myApp/tenants/' . $tenantId . '/subfolder/database.sqlite';
 
         $filesystem = new Filesystem();
         $filesystem->mkdir(dirname($tenantDbPath));
         touch($tenantDbPath);
 
+        // Act
         $this->commandTester->execute([
             'tenant_id' => $tenantId,
         ]);
 
+        // Assert
         $output = $this->commandTester->getDisplay();
         $this->assertStringStartsWith('Could not create database for tenant "' . $tenantId . '"', $output);
+
+        // clean up
+        $filesystem->remove($tenantDbPath);
     }
 }

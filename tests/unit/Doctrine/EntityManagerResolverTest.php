@@ -16,6 +16,8 @@ use function SafePHP\strval;
  */
 class EntityManagerResolverTest extends TestCase
 {
+    private ?string $savedEnvDataPath = null;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -23,36 +25,55 @@ class EntityManagerResolverTest extends TestCase
         if (isset($_REQUEST['tenant_id'])) {
             unset($_REQUEST['tenant_id']);
         }
+
+        if (isset($_ENV['DATA_PATH'])) {
+            $this->savedEnvDataPath = $_ENV['DATA_PATH'];
+        }
+        $_ENV['DATA_PATH'] = '../data/myApp';
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        if ($this->savedEnvDataPath !== null) {
+            $_ENV['DATA_PATH'] = $this->savedEnvDataPath;
+        } else {
+            unset($_ENV['DATA_PATH']);
+        }
     }
 
     public function testGetEntityManagerByDefault(): void
     {
-        if (isset($_REQUEST['tenant_id'])) {
-            unset($_REQUEST['tenant_id']);
-        }
+        // Arrange
         $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
         $sut = new EntityManagerResolver($em);
 
+        // Act
         $result = $sut->getEntityManager();
 
+        // Assert
         $this->assertEquals($em, $result);
+
         $params = $result->getConnection()->getParams();
         $this->assertStringEndsWith(
-            'data/database.sqlite',
+            FakeEntityManagerFactory::SQLITE_DATABASE_PATH,
             strval(ParamsConnection::getParam($params, 'path'))
         );
     }
 
     public function testGetEntityManagerWithTenant(): void
     {
+        // Arrange
         $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
         $sut = new EntityManagerResolver($em);
 
+        // Act
         $result = $sut->getEntityManager('tenant123');
 
+        // Assert
         $params = $result->getConnection()->getParams();
         $this->assertStringEndsWith(
-            'databases/tenant123/database.sqlite',
+            'tenants/tenant123/' . FakeEntityManagerFactory::SQLITE_DATABASE_SUBPATH,
             strval(ParamsConnection::getParam($params, 'path'))
         );
     }
@@ -78,7 +99,7 @@ class EntityManagerResolverTest extends TestCase
 
         $params = $result->getConnection()->getParams();
         $this->assertStringEndsWith(
-            'databases/tenant123/database.sqlite',
+            'tenants/tenant123/subfolder/database.sqlite',
             strval(ParamsConnection::getParam($params, 'path'))
         );
     }

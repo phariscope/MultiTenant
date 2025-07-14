@@ -18,9 +18,9 @@ class DatabaseTools
     public function createDatabase(EntityManagerInterface $em): void
     {
         $connection = $em->getConnection();
-        $driver = $connection->getDriver()->getDatabasePlatform();
+        $platform = $connection->getDriver()->getDatabasePlatform();
 
-        if ($driver instanceof SqlitePlatform) {
+        if ($platform instanceof SqlitePlatform) {
             $this->mkdirForSqlite($connection);
             return;
         }

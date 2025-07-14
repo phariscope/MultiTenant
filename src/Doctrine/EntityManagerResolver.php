@@ -36,9 +36,9 @@ class EntityManagerResolver
     private function createEntityManagerForTenant(string $tenantId): EntityManager
     {
         $connection = $this->wrapped->getConnection();
-        $driver = $connection->getDriver()->getDatabasePlatform();
+        $platform = $connection->getDriver()->getDatabasePlatform();
         $factory = new TenantEntityManagerFactory();
-        if ($driver instanceof SqlitePlatform) {
+        if ($platform instanceof SqlitePlatform) {
             return $factory->createSqliteEntityManager($this->wrapped, $tenantId);
         }
         return $factory->createMariadbEntityManager($this->wrapped, $tenantId);

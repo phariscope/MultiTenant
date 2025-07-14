@@ -4,23 +4,23 @@ namespace Phariscope\MultiTenant\Tests\Doctrine\Tools;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
-use Doctrine\ORM\Configuration;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping\Driver\XmlDriver;
 use Doctrine\ORM\ORMSetup;
-use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeModel\FakeEntity;
 use Symfony\Component\Filesystem\Filesystem;
 
 class FakeEntityManagerFactory
 {
-    public const SQLITE_DATABASE_PATH = '/var/tmp/data/database.sqlite';
+    public const DATA_PATH = '/var/tmp/data/myApp';
+    public const SQLITE_DATABASE_SUBPATH = 'subfolder/database.sqlite';
+    public const SQLITE_DATABASE_PATH = self::DATA_PATH . '/' . self::SQLITE_DATABASE_SUBPATH;
 
     public const MARIADB_DATABASE_NAME = 'mydbname';
 
     public function cleanSqliteDatabase(): void
     {
         $fs = new Filesystem();
-        $fs->remove(getcwd() . '/var/tmp/data');
+        $fs->remove(getcwd() . self::DATA_PATH);
     }
 
     public function createSqliteEntityManager(): EntityManager
@@ -36,7 +36,6 @@ class FakeEntityManagerFactory
 
     private function createEntityManager(Connection $connection): EntityManager
     {
-        //$config = new Configuration();
 
         $paths = [
             __DIR__ . '/resources/mapping',
