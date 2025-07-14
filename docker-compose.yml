@@ -8,6 +8,8 @@ services:
       ${USERID}:${GROUPID}
     volumes:
       - "$PWD:$PWD"
+    env_file:
+      - .env
     working_dir: $PWD
     networks:
       - ${COMPOSE_PROJECT_NAME}-network

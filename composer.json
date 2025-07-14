@@ -32,6 +32,9 @@
         "mockery/mockery": "^1.6",
         "mikey179/vfsstream": "^1.6"
     },
+    "conflict": {
+        "doctrine/dbal": ">=4"
+    },
     "autoload": {
         "psr-4" : {
             "Phariscope\\MultiTenant\\" : "src/"

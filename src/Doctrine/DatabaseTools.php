@@ -63,8 +63,8 @@ class DatabaseTools
     public function databaseExists(EntityManagerInterface $em): bool
     {
         $connection = $em->getConnection();
-        $driver = $connection->getDriver()->getDatabasePlatform();
-        if ($driver instanceof SqlitePlatform) {
+        $platform = $connection->getDatabasePlatform();
+        if ($platform instanceof SqlitePlatform) {
             $params = $connection->getParams();
             $path = strval(ParamsConnection::getParam($params, 'path'));
             return file_exists($path);
@@ -83,8 +83,8 @@ class DatabaseTools
     public function dropDatabase(EntityManagerInterface $em): void
     {
         $connection = $em->getConnection();
-        $driver = $connection->getDriver()->getDatabasePlatform();
-        if ($driver instanceof SqlitePlatform) {
+        $platform = $connection->getDatabasePlatform();
+        if ($platform instanceof SqlitePlatform) {
             $params = $connection->getParams();
             $path = strval(ParamsConnection::getParam($params, 'path'));
             if (file_exists($path)) {
