@@ -86,9 +86,9 @@ A "tenants" subfolder will be created in the DATA_PATH. For each tenant, a speci
 
 For example:
 DATA_PATH=./var/data
-DATABASE_URL=sqlite:///%DATA_PATH%/database/mydatabase.sqlite
+DATABASE_URL=sqlite:///%DATA_PATH%/eventually/some/subfolders/mydatabase.sqlite
 
 Given the tenant "tenantID1234", the database create command will create the following file:
-./var/data/tenants/tenantID1234/database/mydatabase.sqlite
+./var/data/tenants/tenantID1234/eventually/some/subfolders/mydatabase.sqlite
 
 The "./var/data/tenants/tenantID1234" folder will contain all the data required for your project.

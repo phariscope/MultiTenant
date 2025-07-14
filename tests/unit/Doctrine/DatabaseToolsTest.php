@@ -2,12 +2,6 @@
 
 namespace Phariscope\MultiTenant\Tests\Doctrine;
 
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\AbstractMySQLDriver;
-use Doctrine\DBAL\Platforms\AbstractPlatform;
-use Doctrine\ORM\Configuration;
-use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\Mapping\Driver\XmlDriver;
 use Phariscope\MultiTenant\Doctrine\DatabaseTools;
 use Phariscope\MultiTenant\Doctrine\Tools\ParamsConnection;
 use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeEntityManagerFactory;
@@ -66,7 +60,7 @@ class DatabaseToolsTest extends TestCase
         $this->assertFalse($sut->databaseExists($em));
     }
 
-    public function testCreateDatabaseIfNotExists(): void
+    public function testCreateDatabaseSqliteIfNotExists(): void
     {
         $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
         $sut = new DatabaseTools();

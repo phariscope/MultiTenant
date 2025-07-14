@@ -137,4 +137,36 @@ class TenantManagerTest extends TestCase
 
         $this->assertEquals('tenant_from_header_request', $tenantId);
     }
+
+    public function testConstructorWithActiveSession(): void
+    {
+        // Arrange
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $_SESSION['tenant_id'] = 'tenant_from_active_session';
+
+        // Act
+        $sut = new TenantManager();
+        $tenantId = $sut->getCurrentTenantId();
+
+        // Assert
+        $this->assertEquals('tenant_from_active_session', $tenantId);
+
+        // Clean up
+        session_destroy();
+    }
+
+    public function testGetTenantIdFromEmptySymfonyRequest(): void
+    {
+        // Arrange
+        $request = new Request(); // Empty request with no tenant_id anywhere
+
+        // Act
+        $sut = new TenantManager($request);
+        $tenantId = $sut->getCurrentTenantId();
+
+        // Assert
+        $this->assertNull($tenantId);
+    }
 }

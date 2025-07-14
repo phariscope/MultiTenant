@@ -18,6 +18,8 @@ class TenantEntityManagerFactoryTest extends TestCase
     {
         parent::setUp();
         (new FakeEntityManagerFactory())->cleanSqliteDatabase();
+
+        $_ENV['DATA_PATH'] = '../data/myApp';
     }
 
     public function testCreateSqliteEntityManager(): void
@@ -28,7 +30,10 @@ class TenantEntityManagerFactoryTest extends TestCase
 
         $this->assertEquals(true, $result instanceof EntityManager);
         $params = $result->getConnection()->getParams();
-        $this->assertStringEndsWith('databases/tenant123/database.sqlite', strval($this->getParam($params, 'path')));
+        $this->assertStringEndsWith(
+            'tenants/tenant123/subfolder/database.sqlite',
+            strval($this->getParam($params, 'path'))
+        );
         $this->assertEquals('pdo_sqlite', $this->getParam($params, 'driver'));
     }
 
@@ -69,15 +74,4 @@ class TenantEntityManagerFactoryTest extends TestCase
         $sut = new TenantEntityManagerFactory();
         $sut->createSqliteEntityManager($em, 'tenant123');
     }
-/*
-        public function testSqlitePathException(): void
-        {
-            $this->expectException(\RuntimeException::class);
-            $this->expectExceptionMessage("Unable to create directory 'not/existing/directory'");
-
-        $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
-        $sut = new TenantEntityManagerFactory();
-        $sut->createSqliteEntityManager($em, 'tent*');
-    }
-        */
 }

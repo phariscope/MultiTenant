@@ -17,4 +17,7 @@
       <directory suffix=".php">src</directory>
     </include>
   </source>
+  <php>
+    <env name="DATA_PATH" value="./var/tmp/data/myApp"/>
+  </php>
 </phpunit>
