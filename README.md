@@ -31,11 +31,54 @@ return [
 
 # Usage
 
+Use either the brute force or the precise method.
+
+With the brute force method: Your entire application will be tenanted: it will be very difficult to implement any part external to your application, as the original  DATA_PATH and DATABASE_URL env will be lost.
+
+With the precise method: Choose where to implement tenant behavior or general behavior.
+
+## Brutal
+
+Modify DATA_PATH and DATABASE_URL values as soon as possible with the ContextTransformer. You won't have to think about tenants anymore because your EntityManager object will be build with your tenant values.
+
+For instance with Symfony, inside your console script or your index.php, just modify the contexte.
+
+In a typical console script:
+```php
+return function (array $context) {
+    $o = new ContextTransformer($context);
+    $o->transformDataPath();
+    $o->transformDatabaseUrl();
+
+    $kernel = new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
+
+    return new Application($kernel);
+};
+```
+
+in your Symfony Commands YOU MUST allow --id_tenant option like this
+```php
+class YourOwnCommand extends Command
+{
+(...)
+
+    protected function configure(): void
+    {
+        $this
+            ->setName('my:own:command')
+            ->setDescription('This is a sample command description.')
+            ->addOption('tenant_id', null, InputOption::VALUE_REQUIRED, 'The ID of the tenant');
+    }
+(...)
+```
+Important : if you don't require tenant_id then when you ignore --tenant_id the orignal DATA_PATH and DATABASE_URL values are used. (so this is a way to have a global comportement; you can be "precise" anyway)
+
+## Precise
+
 In a Symfony controller, follow these steps:
 1. Inject `EntityManagerResolver` into your controller’s constructor.
 2. Retrieve the tenant-specific entity manager within your route action.
 3. create database and schema for a tenant if database does not exist for this tenant
-4. Enjoy...
 
 For example, assuming you have a `tenant_id` in your request or session:
 

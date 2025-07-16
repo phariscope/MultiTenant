@@ -3,7 +3,7 @@
 namespace Phariscope\MultiTenant\Tests\Doctrine\Sqlite;
 
 use Phariscope\MultiTenant\Doctrine\Sqlite\PathTransformer;
-use Phariscope\MultiTenant\Doctrine\Sqlite\DataPathException;
+use Phariscope\MultiTenant\Share\DataPathException;
 use PHPUnit\Framework\TestCase;
 
 class PathTransformerTest extends TestCase
