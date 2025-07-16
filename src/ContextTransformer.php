@@ -3,6 +3,7 @@
 namespace Phariscope\MultiTenant;
 
 use Phariscope\MultiTenant\Doctrine\Sqlite\PathTransformer;
+use Phariscope\MultiTenant\Doctrine\Tools\TenantManager;
 use Phariscope\MultiTenant\Share\TenantDataPath;
 
 class ContextTransformer
@@ -24,13 +25,23 @@ class ContextTransformer
 
     public function transformDataPath(): void
     {
-        $tenantId = $this->extractTenantIdFromArgv();
+        $tenantId = $this->extractTenantIdFromContext();
 
         if ($tenantId !== null && $this->initialDataPath !== null) {
             $tenantDatapath = new TenantDataPath($this->initialDataPath, $tenantId);
             $this->context['DATA_PATH'] = $tenantDatapath->getTenantDataPath();
             $_ENV['DATA_PATH'] = $this->context['DATA_PATH'];
         }
+    }
+
+    private function extractTenantIdFromContext(): ?string
+    {
+        $tenantId = $this->extractTenantIdFromArgv();
+        if ($tenantId === null) {
+            $tenantManager = new TenantManager();
+            $tenantId = $tenantManager->getCurrentTenantId();
+        }
+        return $tenantId;
     }
 
     private function extractTenantIdFromArgv(): ?string
@@ -60,7 +71,7 @@ class ContextTransformer
 
     public function transformDatabaseUrl(): void
     {
-        $tenantId = $this->extractTenantIdFromArgv();
+        $tenantId = $this->extractTenantIdFromContext();
 
         if ($tenantId !== null && $this->initialDatabaseUrl !== null) {
             $databaseUrl = $this->context['DATABASE_URL'];
