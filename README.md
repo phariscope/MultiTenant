@@ -83,7 +83,6 @@ In a Symfony controller, follow these steps:
 For example, assuming you have a `tenant_id` in your request or session:
 
 ```php
-
 class YourController extends AbstractController
 {
     public function __construct(
@@ -110,7 +109,7 @@ Ensure you have the necessary console setup to handle tenant operations.
 To create a database for a specific tenant (e.g., `tenantID1234`), you can use the console command:
 
 ```bash
-bin/console tenant:database:create tenantID1234
+bin/console tenant:database:create --tenant_id tenantID1234
 ```
 
 # Creating a Schema for a tenant database
@@ -120,7 +119,7 @@ Once you have created a tenant database, you can create its schema.
 You can use the console command:
 
 ```bash
-bin/console tenant:schema:create tenantID1234
+bin/console tenant:schema:create --tenant_id tenantID1234
 ```
 
 # How it works
@@ -128,8 +127,10 @@ bin/console tenant:schema:create tenantID1234
 A "tenants" subfolder will be created in the DATA_PATH. For each tenant, a specific folder will be created containing all the data, including the database.
 
 For example:
+```bash
 DATA_PATH=./var/data
 DATABASE_URL=sqlite:///%DATA_PATH%/eventually/some/subfolders/mydatabase.sqlite
+```
 
 Given the tenant "tenantID1234", the database create command will create the following file:
 ./var/data/tenants/tenantID1234/eventually/some/subfolders/mydatabase.sqlite
