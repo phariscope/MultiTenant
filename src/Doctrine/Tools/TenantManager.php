@@ -9,7 +9,7 @@ use function SafePHP\strval;
 
 class TenantManager
 {
-    private ?Request $request;
+    private Request $request;
 
     /** @var array<string, mixed> */
     private array $session;
@@ -19,7 +19,12 @@ class TenantManager
      */
     public function __construct(?Request $request = null, ?array $session = null)
     {
-        $this->request = $request;
+        if ($request !== null) {
+            $this->request = $request;
+        } else {
+            $this->request = Request::createFromGlobals();
+        }
+
         if ($session === null) {
             if (session_status() === PHP_SESSION_ACTIVE) {
                 $this->session = $_SESSION;
@@ -33,21 +38,6 @@ class TenantManager
 
     public function getCurrentTenantId(): ?string
     {
-
-        if (isset($this->request) && $this->request->getContent() !== null) {
-            $content = $this->request->getContent();
-            if (json_validate($content)) {
-                $json = json_decode($content, true);
-                if (is_array($json) && isset($json['tenant_id'])) {
-                    return strval($json['tenant_id']);
-                }
-            }
-        }
-
-        if (null !== $this->request) {
-            return $this->getTenantIdFromRequest($this->request);
-        }
-
         if (isset($_REQUEST['tenant_id'])) {
             return $_REQUEST['tenant_id'];
         }
@@ -72,7 +62,18 @@ class TenantManager
             return $_COOKIE['tenant_id'];
         }
 
-        return null;
+        if ($this->request->getContent() !== null) {
+            $content = $this->request->getContent();
+            if (json_validate($content)) {
+                $json = json_decode($content, true);
+                if (is_array($json) && isset($json['tenant_id'])) {
+                    return strval($json['tenant_id']);
+                }
+            }
+        }
+
+
+        return  $this->getTenantIdFromRequest($this->request);
     }
 
     private function getTenantIdFromRequest(Request $request): ?string
