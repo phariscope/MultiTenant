@@ -67,13 +67,16 @@ class FakeEntityManagerFactory
 
     public function createMariadbEntityManager(): EntityManager
     {
-        $url = sprintf(
-            'mysql://root:password@mariadb:3306/%s?serverVersion=10.11.5-MariaDB&charset=utf8mb4',
-            self::MARIADB_DATABASE_NAME
-        );
         $connection = DriverManager::getConnection(
             [
-                'url' => $url
+                'driver' => 'pdo_mysql',
+                'host' => 'mariadb',
+                'port' => 3306,
+                'user' => 'root',
+                'password' => 'password',
+                'dbname' => self::MARIADB_DATABASE_NAME,
+                'serverVersion' => '10.11.5-MariaDB',
+                'charset' => 'utf8mb4',
             ]
         );
         return $this->createEntityManager($connection);
@@ -83,7 +86,11 @@ class FakeEntityManagerFactory
     {
         $connection = DriverManager::getConnection(
             [
-                'url' => 'mysql://root:password@mariadb:3306'
+                'driver' => 'pdo_mysql',
+                'host' => 'mariadb',
+                'port' => 3306,
+                'user' => 'root',
+                'password' => 'password',
             ]
         );
         $schemaManager = $connection->createSchemaManager();
