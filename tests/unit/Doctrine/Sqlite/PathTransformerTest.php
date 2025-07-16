@@ -91,7 +91,7 @@ class PathTransformerTest extends TestCase
         $dataPath = '../data/myApp';
 
         $initialPath = '/var/myApp/data/myApp/database/myApp.sqlite';
-        $expectedPath = '/var/myApp/data/myApp/tenants/tenant123/database/myApp.sqlite';
+        $expectedPath = '/var/data/myApp/tenants/tenant123/database/myApp.sqlite';
 
         // Act
         $sut = new PathTransformer($dataPath);
@@ -108,7 +108,7 @@ class PathTransformerTest extends TestCase
         $dataPath = '../../data/myApp';
 
         $initialPath = '/var/myApp/data/myApp/database/myApp.sqlite';
-        $expectedPath = '/var/myApp/data/myApp/tenants/tenant123/database/myApp.sqlite';
+        $expectedPath = '/data/myApp/tenants/tenant123/database/myApp.sqlite';
 
         // Act
         $sut = new PathTransformer($dataPath);
