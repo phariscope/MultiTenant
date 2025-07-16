@@ -2,7 +2,7 @@
 
 namespace Phariscope\MultiTenant\Doctrine;
 
-use Doctrine\DBAL\Platforms\SqlitePlatform;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Phariscope\MultiTenant\Doctrine\Tools\TenantEntityManagerFactory;
@@ -36,9 +36,9 @@ class EntityManagerResolver
     private function createEntityManagerForTenant(string $tenantId): EntityManager
     {
         $connection = $this->wrapped->getConnection();
-        $platform = $connection->getDriver()->getDatabasePlatform();
+        $platform = $connection->getDatabasePlatform();
         $factory = new TenantEntityManagerFactory();
-        if ($platform instanceof SqlitePlatform) {
+        if ($platform instanceof SQLitePlatform) {
             return $factory->createSqliteEntityManager($this->wrapped, $tenantId);
         }
         return $factory->createMariadbEntityManager($this->wrapped, $tenantId);

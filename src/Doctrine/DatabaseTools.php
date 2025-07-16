@@ -4,7 +4,7 @@ namespace Phariscope\MultiTenant\Doctrine;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\ConnectionException;
-use Doctrine\DBAL\Platforms\SqlitePlatform;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\ORM\EntityManagerInterface;
 use Phariscope\MultiTenant\Doctrine\Tools\ParamsConnection;
 
@@ -18,9 +18,9 @@ class DatabaseTools
     public function createDatabase(EntityManagerInterface $em): void
     {
         $connection = $em->getConnection();
-        $platform = $connection->getDriver()->getDatabasePlatform();
+        $platform = $connection->getDatabasePlatform();
 
-        if ($platform instanceof SqlitePlatform) {
+        if ($platform instanceof SQLitePlatform) {
             $this->mkdirForSqlite($connection);
             return;
         }
@@ -64,7 +64,7 @@ class DatabaseTools
     {
         $connection = $em->getConnection();
         $platform = $connection->getDatabasePlatform();
-        if ($platform instanceof SqlitePlatform) {
+        if ($platform instanceof SQLitePlatform) {
             $params = $connection->getParams();
             $path = strval(ParamsConnection::getParam($params, 'path'));
             return file_exists($path);
@@ -84,7 +84,7 @@ class DatabaseTools
     {
         $connection = $em->getConnection();
         $platform = $connection->getDatabasePlatform();
-        if ($platform instanceof SqlitePlatform) {
+        if ($platform instanceof SQLitePlatform) {
             $params = $connection->getParams();
             $path = strval(ParamsConnection::getParam($params, 'path'));
             if (file_exists($path)) {
