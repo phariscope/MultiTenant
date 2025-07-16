@@ -9,12 +9,13 @@ class ContextTransformerTest extends TestCase
 {
     private ?string $originalDatabaseUrl;
     private ?string $originalDataPath;
-
+    private ?string $originalHttpTenantId;
     protected function setUp(): void
     {
         // sauvegarde les variables d'environnement
         $this->originalDatabaseUrl = isset($_ENV['DATABASE_URL']) ? $_ENV['DATABASE_URL'] : null;
         $this->originalDataPath = isset($_ENV['DATA_PATH']) ? $_ENV['DATA_PATH'] : null;
+        $this->originalHttpTenantId = isset($_SERVER['HTTP_X_TENANT_ID']) ? $_SERVER['HTTP_X_TENANT_ID'] : null;
     }
 
     protected function tearDown(): void
@@ -28,6 +29,11 @@ class ContextTransformerTest extends TestCase
             $_ENV['DATA_PATH'] = $this->originalDataPath;
         } else {
             unset($_ENV['DATA_PATH']);
+        }
+        if ($this->originalHttpTenantId !== null) {
+            $_SERVER['HTTP_X_TENANT_ID'] = $this->originalHttpTenantId;
+        } else {
+            unset($_SERVER['HTTP_X_TENANT_ID']);
         }
     }
 
@@ -242,6 +248,26 @@ class ContextTransformerTest extends TestCase
         $this->assertEquals(
             './var/tmp/data/app/tenants/t1234',
             $_ENV['DATA_PATH']
+        );
+    }
+
+    public function testShouldTransformInHttpContext(): void
+    {
+        $context = [
+            'DATABASE_URL' => 'sqlite:///var/tmp/data/app/sqlite/data.sqlite',
+            'DATA_PATH' => './var/tmp/data/app',
+        ];
+
+        $_SERVER['HTTP_X_TENANT_ID'] = 't1234';
+
+        $transformer = new ContextTransformer($context);
+        $transformer->transformDataPath();
+        $transformer->transformDatabaseUrl();
+
+        $this->assertEquals('./var/tmp/data/app/tenants/t1234', $context['DATA_PATH']);
+        $this->assertEquals(
+            'sqlite:///var/tmp/data/app/tenants/t1234/sqlite/data.sqlite',
+            $context['DATABASE_URL']
         );
     }
 }
