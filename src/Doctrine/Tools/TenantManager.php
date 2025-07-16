@@ -4,6 +4,7 @@ namespace Phariscope\MultiTenant\Doctrine\Tools;
 
 use Symfony\Component\HttpFoundation\Request;
 
+use function Safe\json_decode;
 use function SafePHP\strval;
 
 class TenantManager
@@ -32,6 +33,17 @@ class TenantManager
 
     public function getCurrentTenantId(): ?string
     {
+
+        if (isset($this->request) && $this->request->getContent() !== null) {
+            $content = $this->request->getContent();
+            if (json_validate($content)) {
+                $json = json_decode($content, true);
+                if (is_array($json) && isset($json['tenant_id'])) {
+                    return strval($json['tenant_id']);
+                }
+            }
+        }
+
         if (null !== $this->request) {
             return $this->getTenantIdFromRequest($this->request);
         }

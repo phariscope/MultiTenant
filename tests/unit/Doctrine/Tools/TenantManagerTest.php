@@ -6,6 +6,8 @@ use PHPUnit\Framework\TestCase;
 use Phariscope\MultiTenant\Doctrine\Tools\TenantManager;
 use Symfony\Component\HttpFoundation\Request;
 
+use function Safe\json_encode;
+
 class TenantManagerTest extends TestCase
 {
     private TenantManager $tenantManager;
@@ -167,6 +169,29 @@ class TenantManagerTest extends TestCase
         $tenantId = $sut->getCurrentTenantId();
 
         // Assert
+        $this->assertNull($tenantId);
+    }
+
+    public function testGetTenantIdFromJsonRequest(): void
+    {
+        // Arrange
+        $request = new Request([], [], [], [], [], [], json_encode(['tenant_id' => 'tenant_from_json_request']));
+
+        // Act
+        $sut = new TenantManager($request);
+        $tenantId = $sut->getCurrentTenantId();
+
+        // Assert
+        $this->assertEquals('tenant_from_json_request', $tenantId);
+    }
+
+    public function testShouldNotThrowEceptionWhenContentIsNotJson(): void
+    {
+        $request = new Request([], [], [], [], [], [], 'not_json');
+
+        $sut = new TenantManager($request);
+        $tenantId = $sut->getCurrentTenantId();
+
         $this->assertNull($tenantId);
     }
 }
