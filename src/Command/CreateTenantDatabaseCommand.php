@@ -4,23 +4,21 @@ namespace Phariscope\MultiTenant\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Phariscope\MultiTenant\Doctrine\DatabaseTools;
-use Phariscope\MultiTenant\Doctrine\EntityManagerResolver;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Exception\RuntimeException;
+use Symfony\Component\Console\Input\InputOption;
 
 use function SafePHP\strval;
 
 class CreateTenantDatabaseCommand extends Command
 {
-    private EntityManagerResolver $entityManagerResolver;
+    private EntityManagerInterface $entityManager;
 
     public function __construct(EntityManagerInterface $entityManager)
     {
-        $this->entityManagerResolver = new EntityManagerResolver($entityManager);
         parent::__construct();
+        $this->entityManager = $entityManager;
     }
 
     protected function configure(): void
@@ -28,17 +26,17 @@ class CreateTenantDatabaseCommand extends Command
         $this
             ->setName('tenant:database:create')
             ->setDescription('Creates a new database for a tenant.')
-            ->addArgument('tenant_id', InputArgument::REQUIRED, 'The ID of the tenant');
+            ->addOption('tenant_id', null, InputOption::VALUE_REQUIRED, 'The ID of the tenant');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $tenantId = strval($input->getArgument('tenant_id'));
+        $tenantId = strval($input->getOption('tenant_id'));
 
         try {
             $databaseTools = new DatabaseTools();
-            $tenantEntityManager = $this->entityManagerResolver->getEntityManager($tenantId);
-            $databaseTools->createDatabase($tenantEntityManager);
+            $databaseTools->createDatabase($this->entityManager);
+
             $output->writeln('<info>Database for tenant "' . $tenantId . '" created successfully.</info>');
         } catch (\Exception $e) {
             $output->writeln(

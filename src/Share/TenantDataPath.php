@@ -1,6 +1,6 @@
 <?php
 
-namespace Phariscope\MultiTenant\Doctrine\Sqlite;
+namespace Phariscope\MultiTenant\Share;
 
 class TenantDataPath
 {

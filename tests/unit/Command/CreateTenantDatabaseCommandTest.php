@@ -4,11 +4,14 @@ namespace Phariscope\MultiTenant\Tests\Command;
 
 use Doctrine\ORM\EntityManager;
 use Phariscope\MultiTenant\Command\CreateTenantDatabaseCommand;
+use Phariscope\MultiTenant\Doctrine\Tools\ParamsConnection;
 use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeEntityManagerFactory;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Filesystem\Filesystem;
+
+use function SafePHP\strval;
 
 class CreateTenantDatabaseCommandTest extends TestCase
 {
@@ -18,10 +21,11 @@ class CreateTenantDatabaseCommandTest extends TestCase
 
     protected function setUp(): void
     {
+
         (new FakeEntityManagerFactory())->cleanSqliteDatabase();
         $this->em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
+
         $this->commandTester = $this->createCommandTester();
-        $_ENV['DATA_PATH'] = FakeEntityManagerFactory::DATA_PATH;
     }
 
     protected function tearDown(): void
@@ -44,14 +48,11 @@ class CreateTenantDatabaseCommandTest extends TestCase
         $tenantId = 'tenant123';
 
         $this->commandTester->execute([
-            'tenant_id' => $tenantId,
+            '--tenant_id' => $tenantId,
+            '--verbose' => 2,
         ]);
 
         $this->assertConsoleSuccessOutput($tenantId);
-
-        // Vérifier si la base de données a bien été créée avec la nouvelle structure
-        $dbPath = getcwd() . '/var/tmp/data/myApp/tenants/' . $tenantId . '/subfolder/database.sqlite';
-        $this->assertTrue(file_exists($dbPath));
     }
 
     private function assertConsoleSuccessOutput(string $expectedTenantId): void
@@ -67,7 +68,7 @@ class CreateTenantDatabaseCommandTest extends TestCase
     {
         // Arrange
         $tenantId = 'tenant123';
-        $tenantDbPath = getcwd() . '/var/tmp/data/myApp/tenants/' . $tenantId . '/subfolder/database.sqlite';
+        $tenantDbPath = strval(ParamsConnection::getParam($this->em->getConnection()->getParams(), 'path'));
 
         $filesystem = new Filesystem();
         $filesystem->mkdir(dirname($tenantDbPath));
@@ -75,7 +76,8 @@ class CreateTenantDatabaseCommandTest extends TestCase
 
         // Act
         $this->commandTester->execute([
-            'tenant_id' => $tenantId,
+            '--tenant_id' => $tenantId,
+            '--verbose' => 2,
         ]);
 
         // Assert

@@ -2,6 +2,9 @@
 
 namespace Phariscope\MultiTenant\Doctrine\Sqlite;
 
+use Phariscope\MultiTenant\Share\DataPathException;
+use Phariscope\MultiTenant\Share\TenantDataPath;
+
 class PathTransformer
 {
     public function __construct(private ?string $dataPath = null)

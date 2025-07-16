@@ -1,9 +1,9 @@
 <?php
 
-namespace Phariscope\MultiTenant\Tests\Doctrine\Sqlite;
+namespace Phariscope\MultiTenant\Tests\Share;
 
-use Phariscope\MultiTenant\Doctrine\Sqlite\TenantDataPath;
-use Phariscope\MultiTenant\Doctrine\Sqlite\DataPathException;
+use Phariscope\MultiTenant\Share\TenantDataPath;
+use Phariscope\MultiTenant\Share\DataPathException;
 use PHPUnit\Framework\TestCase;
 
 class TenantDataPathTest extends TestCase

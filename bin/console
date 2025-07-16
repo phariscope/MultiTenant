@@ -1,6 +1,7 @@
 #!bin/php
 <?php
 
+use Phariscope\MultiTenant\ContextTransformer;
 use Phariscope\MultiTenant\Symfony\Kernel;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Dotenv\Dotenv;
@@ -11,6 +12,10 @@ require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
 (new Dotenv())->bootEnv(dirname(__DIR__).'/src/Symfony/.env');
 
 return function (array $context) {
+    $o = new ContextTransformer($context);
+    $o->transformDataPath();
+    $o->transformDatabaseUrl();
+
     $kernel = new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
 
     return new Application($kernel);
