@@ -31,6 +31,7 @@ class ContextTransformer
             $tenantDatapath = new TenantDataPath($this->initialDataPath, $tenantId);
             $this->context['DATA_PATH'] = $tenantDatapath->getTenantDataPath();
             $_ENV['DATA_PATH'] = $this->context['DATA_PATH'];
+            putenv('DATA_PATH=' . $this->context['DATA_PATH']);
         }
     }
 
@@ -81,6 +82,7 @@ class ContextTransformer
                 $sqlitePathTransformer = new PathTransformer($this->initialDataPath);
                 $this->context['DATABASE_URL'] = $sqlitePathTransformer->transform($databaseUrl, $tenantId);
                 $_ENV['DATABASE_URL'] = $this->context['DATABASE_URL'];
+                putenv('DATABASE_URL=' . $this->context['DATABASE_URL']);
             }
         }
     }
