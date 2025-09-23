@@ -52,7 +52,14 @@ class ContextTransformerTest extends TestCase
         $transformer = new ContextTransformer($context);
         $transformer->transformDataPath();
 
-        $this->assertEquals('./var/tmp/data/app/tenants/t1234', $context['DATA_PATH']);
+        $this->assertEnvValue('DATA_PATH', './var/tmp/data/app/tenants/t1234');
+    }
+
+    private function assertEnvValue(string $envName, string $expectedValue): void
+    {
+        $this->assertTrue(isset($_ENV[$envName]));
+        $this->assertEquals($expectedValue, $_ENV[$envName]);
+        $this->assertEquals($expectedValue, getenv($envName));
     }
 
     public function testTransformDataPathWithTenantIdInArgvWithEqualSign(): void
@@ -69,7 +76,7 @@ class ContextTransformerTest extends TestCase
         $transformer = new ContextTransformer($context);
         $transformer->transformDataPath();
 
-        $this->assertEquals('./var/tmp/data/app/tenants/t1234', $context['DATA_PATH']);
+        $this->assertEnvValue('DATA_PATH', './var/tmp/data/app/tenants/t1234');
     }
 
     public function testTransformDataPathWithoutTenantId(): void
@@ -105,9 +112,9 @@ class ContextTransformerTest extends TestCase
         $transformer = new ContextTransformer($context);
         $transformer->transformDatabaseUrl();
 
-        $this->assertEquals(
+        $this->assertEnvValue(
+            'DATABASE_URL',
             'sqlite:///var/tmp/data/app/tenants/t1234/sqlite/data.sqlite',
-            $context['DATABASE_URL']
         );
     }
 
@@ -208,13 +215,13 @@ class ContextTransformerTest extends TestCase
         $transformer->transformDatabaseUrl();
 
         // Assert
-        $this->assertEquals(
-            'sqlite:///var/tmp/data/app/tenants/t1234/sqlite/data.sqlite',
-            $_ENV['DATABASE_URL']
+        $this->assertEnvValue(
+            'DATABASE_URL',
+            'sqlite:///var/tmp/data/app/tenants/t1234/sqlite/data.sqlite'
         );
-        $this->assertEquals(
-            './var/tmp/data/app/tenants/t1234',
-            $_ENV['DATA_PATH']
+        $this->assertEnvValue(
+            'DATA_PATH',
+            './var/tmp/data/app/tenants/t1234'
         );
     }
 
@@ -241,13 +248,13 @@ class ContextTransformerTest extends TestCase
         $transformer->transformDatabaseUrl();
 
         // Assert
-        $this->assertEquals(
-            'sqlite:///var/tmp/data/app/tenants/t1234/sqlite/data.sqlite',
-            $_ENV['DATABASE_URL']
+        $this->assertEnvValue(
+            'DATABASE_URL',
+            'sqlite:///var/tmp/data/app/tenants/t1234/sqlite/data.sqlite'
         );
-        $this->assertEquals(
-            './var/tmp/data/app/tenants/t1234',
-            $_ENV['DATA_PATH']
+        $this->assertEnvValue(
+            'DATA_PATH',
+            './var/tmp/data/app/tenants/t1234'
         );
     }
 
