@@ -29,14 +29,17 @@ class UpdateTenantSchemaCommandTest extends TestCase
 
     public function testFailsWhenPendingChangesWithoutForceOrDumpSql(): void
     {
+        // Arrange
         $tenantId = 'tenant123';
         $this->createDatabaseForTenant($tenantId);
-
         $commandTester = $this->createUpdateCommandTester();
+
+        // Act
         $exitCode = $commandTester->execute([
             '--tenant_id' => $tenantId,
         ]);
 
+        // Assert
         $this->assertSame(1, $exitCode);
         $output = $commandTester->getDisplay();
         $this->assertStringContainsString('--force', $output);
@@ -67,30 +70,36 @@ class UpdateTenantSchemaCommandTest extends TestCase
 
     public function testDumpSqlPrintsStatementsWithoutExecuting(): void
     {
+        // Arrange
         $tenantId = 'tenant123';
         $this->createDatabaseForTenant($tenantId);
-
         $commandTester = $this->createUpdateCommandTester();
+
+        // Act
         $exitCode = $commandTester->execute([
             '--tenant_id' => $tenantId,
             '--dump-sql' => true,
         ]);
 
+        // Assert
         $this->assertSame(0, $exitCode);
         $this->assertStringContainsString('CREATE TABLE', $commandTester->getDisplay());
     }
 
     public function testForceAppliesPendingSchemaChanges(): void
     {
+        // Arrange
         $tenantId = 'tenant123';
         $this->createDatabaseForTenant($tenantId);
-
         $commandTester = $this->createUpdateCommandTester();
+
+        // Act
         $exitCode = $commandTester->execute([
             '--tenant_id' => $tenantId,
             '--force' => true,
         ]);
 
+        // Assert
         $this->assertSame(0, $exitCode);
         $this->assertStringContainsString(
             'Schema for tenant "' . $tenantId . '" updated successfully.',
@@ -103,14 +112,17 @@ class UpdateTenantSchemaCommandTest extends TestCase
 
     public function testExecuteFailsWithClearMessageWhenUpdateCannotRun(): void
     {
+        // Arrange
         $tenantId = 'tenant123';
         $commandTester = $this->createUpdateCommandTester();
 
+        // Act
         $exitCode = $commandTester->execute([
             '--tenant_id' => $tenantId,
             '--force' => true,
         ]);
 
+        // Assert
         $this->assertSame(1, $exitCode);
         $this->assertStringContainsString(
             'Could not update schema for tenant "' . $tenantId . '"',
@@ -120,16 +132,19 @@ class UpdateTenantSchemaCommandTest extends TestCase
 
     public function testDumpSqlAndForceTogether(): void
     {
+        // Arrange
         $tenantId = 'tenant123';
         $this->createDatabaseForTenant($tenantId);
-
         $commandTester = $this->createUpdateCommandTester();
+
+        // Act
         $exitCode = $commandTester->execute([
             '--tenant_id' => $tenantId,
             '--dump-sql' => true,
             '--force' => true,
         ]);
 
+        // Assert
         $this->assertSame(0, $exitCode);
         $output = $commandTester->getDisplay();
         $this->assertStringContainsString('CREATE TABLE', $output);
