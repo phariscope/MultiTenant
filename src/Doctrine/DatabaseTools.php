@@ -6,6 +6,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\ConnectionException;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Tools\SchemaTool;
 use Phariscope\MultiTenant\Doctrine\Tools\ParamsConnection;
 
 use function Safe\mkdir;
@@ -55,9 +56,27 @@ class DatabaseTools
 
     public function createSchema(EntityManagerInterface $em): void
     {
-        $schemaTool = new \Doctrine\ORM\Tools\SchemaTool($em);
+        $schemaTool = new SchemaTool($em);
         $classes = $em->getMetadataFactory()->getAllMetadata();
         $schemaTool->createSchema($classes);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function getUpdateSchemaSql(EntityManagerInterface $em): array
+    {
+        $schemaTool = new SchemaTool($em);
+        $classes = $em->getMetadataFactory()->getAllMetadata();
+
+        return $schemaTool->getUpdateSchemaSql($classes);
+    }
+
+    public function updateSchema(EntityManagerInterface $em): void
+    {
+        $schemaTool = new SchemaTool($em);
+        $classes = $em->getMetadataFactory()->getAllMetadata();
+        $schemaTool->updateSchema($classes);
     }
 
     public function databaseExists(EntityManagerInterface $em): bool
