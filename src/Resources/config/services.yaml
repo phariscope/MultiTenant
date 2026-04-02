@@ -8,3 +8,8 @@ services:
         tags: ['console.command']
         autowire: true
         autoconfigure: true
+
+    Phariscope\MultiTenant\Command\UpdateTenantSchemaCommand:
+        tags: ['console.command']
+        autowire: true
+        autoconfigure: true
