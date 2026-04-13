@@ -122,6 +122,22 @@ You can use the console command:
 bin/console tenant:schema:create --tenant_id tenantID1234
 ```
 
+# Updating the schema for a tenant database
+
+When your entity mappings change, you can align the tenant database with the current metadata (similar to `doctrine:schema:update`).
+
+Show the SQL without executing it:
+
+```bash
+bin/console tenant:schema:update --tenant_id tenantID1234 --dump-sql
+```
+
+Apply the changes:
+
+```bash
+bin/console tenant:schema:update --tenant_id tenantID1234 --force
+```
+
 # How it works
 
 A "tenants" subfolder will be created in the DATA_PATH. For each tenant, a specific folder will be created containing all the data, including the database.
