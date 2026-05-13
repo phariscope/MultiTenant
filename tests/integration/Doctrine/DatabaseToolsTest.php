@@ -4,7 +4,6 @@ namespace Phariscope\MultiTenant\Tests\Integration\Doctrine;
 
 use Doctrine\DBAL\DriverManager;
 use Phariscope\MultiTenant\Doctrine\DatabaseTools;
-use Phariscope\MultiTenant\Doctrine\Tools\ParamsConnection;
 use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeEntityManagerFactory;
 use PHPUnit\Framework\TestCase;
 
@@ -20,10 +19,15 @@ class DatabaseToolsTest extends TestCase
 
     public function testCreateMysqlDatabase(): void
     {
+        // Arrange
         $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
         $sut = new DatabaseTools();
+
+        // Act
         $sut->createDatabase($em);
         $params = $em->getConnection()->getParams();
+
+        // Assert
         $this->assertEquals(FakeEntityManagerFactory::MARIADB_DATABASE_NAME, $this->getParam($params, 'dbname'));
         $this->assertEquals('pdo_mysql', $this->getParam($params, 'driver'));
         $this->assertEquals('root', $this->getParam($params, 'user'));
@@ -46,40 +50,56 @@ class DatabaseToolsTest extends TestCase
 
     public function testDatabaseExists(): void
     {
+        // Arrange
         $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
         $sut = new DatabaseTools();
-
         $sut->createDatabase($em);
-        $this->assertTrue($sut->databaseExists($em));
+
+        // Act
+        $exists = $sut->databaseExists($em);
+
+        // Assert
+        $this->assertTrue($exists);
     }
 
     public function testDatabaseDoesNotExist(): void
     {
+        // Arrange
         $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
         $sut = new DatabaseTools();
 
-        $this->assertFalse($sut->databaseExists($em));
+        // Act
+        $exists = $sut->databaseExists($em);
+
+        // Assert
+        $this->assertFalse($exists);
     }
 
     public function testDatabaseDrop(): void
     {
+        // Arrange
         $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
         $sut = new DatabaseTools();
-
         $sut->createDatabase($em);
+
+        // Act
         $sut->dropDatabase($em);
 
+        // Assert
         $this->assertFalse($sut->databaseExists($em));
     }
 
     public function testCreateDatabaseIfNotExists(): void
     {
+        // Arrange
         $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
         $sut = new DatabaseTools();
 
+        // Act
         $sut->createDatabaseIfNotExists($em);
-
         $params = $em->getConnection()->getParams();
+
+        // Assert
         $this->assertEquals(FakeEntityManagerFactory::MARIADB_DATABASE_NAME, $this->getParam($params, 'dbname'));
     }
 }

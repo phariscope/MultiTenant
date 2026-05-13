@@ -80,24 +80,30 @@ class EntityManagerResolverTest extends TestCase
 
     public function testAnotherDriverThanSQLite(): void
     {
+        // Arrange
         $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
-
         $sut = new EntityManagerResolver($em);
 
+        // Act
         $result = $sut->getEntityManager('tenant123');
         $params = $result->getConnection()->getParams();
+
+        // Assert
         $this->assertEquals('mydbname_tenant123', ParamsConnection::getParam($params, 'dbname'));
     }
 
     public function testGetEntityManagerByRequest(): void
     {
+        // Arrange
         $request = new Request(['tenant_id' => 'tenant123']);
         $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
         $sut = new EntityManagerResolver($em);
 
+        // Act
         $result = $sut->getEntityManagerByRequest($request);
-
         $params = $result->getConnection()->getParams();
+
+        // Assert
         $this->assertStringEndsWith(
             'tenants/tenant123/subfolder/database.sqlite',
             strval(ParamsConnection::getParam($params, 'path'))

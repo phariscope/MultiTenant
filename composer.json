@@ -15,6 +15,7 @@
     ],
     "require": {
         "php": ">=8.2",
+        "ext-pdo": "*",
         "symfony/orm-pack": "^2.4 || ^5.4 || ^6.0 || ^7.0",
         "phariscope/safephp": "^1.0",
         "symfony/dotenv": "^5.4 || ^6.0 || ^7.0",
@@ -22,6 +23,9 @@
         "symfony/runtime": "^5.4 || ^6.0 || ^7.0",
         "doctrine/cache": "^1.11 || ^2.0",
         "doctrine/dbal": "^4"
+    },
+    "suggest": {
+        "ext-pdo_sqlite": "SQLite (tenant DB paths and tenants/tenants.sqlite shortname registry)."
     },
     "require-dev": {
         "infection/extension-installer": "0.1.2",

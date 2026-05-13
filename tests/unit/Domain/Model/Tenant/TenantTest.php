@@ -10,7 +10,13 @@ class TenantTest extends TestCase
 {
     public function testTenantIsCreated(): void
     {
-        $tenant = new Tenant(new TenantId());
+        // Arrange
+        $tenantId = new TenantId();
+
+        // Act
+        $tenant = new Tenant($tenantId);
+
+        // Assert
         $this->assertInstanceOf(Tenant::class, $tenant);
         $this->assertIsString($tenant->getTenantId());
         $this->assertEquals('', $tenant->getName());
@@ -19,7 +25,13 @@ class TenantTest extends TestCase
 
     public function testTenantCreatedWithNameAndUserEmail(): void
     {
-        $tenant = new Tenant(new TenantId(), 'Campus26', 'user@campus26.com');
+        // Arrange
+        $tenantId = new TenantId();
+
+        // Act
+        $tenant = new Tenant($tenantId, 'Campus26', 'user@campus26.com');
+
+        // Assert
         $this->assertInstanceOf(Tenant::class, $tenant);
         $this->assertIsString($tenant->getTenantId());
         $this->assertEquals('Campus26', $tenant->getName());

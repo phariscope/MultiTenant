@@ -45,8 +45,8 @@ class MultiTenantIntegrationTest extends TestCase
      */
     private function createEntityManagerFromEnv(): \Doctrine\ORM\EntityManagerInterface
     {
-        $dataPath = $_ENV["DATA_PATH"];
-        $databaseUrl = $_ENV["DATABASE_URL"];
+        $dataPath = $_ENV['DATA_PATH'];
+        $databaseUrl = $_ENV['DATABASE_URL'];
 
         // Extraire le nom du fichier de base de données depuis DATABASE_URL
         $databaseFileName = 'database.sqlite';
@@ -55,7 +55,7 @@ class MultiTenantIntegrationTest extends TestCase
         }
 
         // Construire le chemin complet selon DATABASE_URL
-        $databasePath = $dataPath . "/database/" . $databaseFileName;
+        $databasePath = $dataPath . '/database/' . $databaseFileName;
 
         $connection = \Doctrine\DBAL\DriverManager::getConnection([
             'driver' => 'pdo_sqlite',
@@ -78,26 +78,25 @@ class MultiTenantIntegrationTest extends TestCase
      */
     public function testTenantFolderStructureAccordingToReadme(): void
     {
-        // Simuler les variables d'environnement selon le README
-        $_ENV["DATA_PATH"] = $this->tempDataPath;
-        $_ENV["DATABASE_URL"] = "sqlite:///%DATA_PATH%/database/mydatabase.sqlite";
-
-        $tenantId = "tenantID1234";
+        // Arrange
+        $_ENV['DATA_PATH'] = $this->tempDataPath;
+        $_ENV['DATABASE_URL'] = 'sqlite:///%DATA_PATH%/database/mydatabase.sqlite';
+        $tenantId = 'tenantID1234';
         $dataFolder = new DataFolder();
 
-        // Vérifier que le dossier de données du tenant est correct
-        $expectedTenantDataFolder = $this->tempDataPath . "/tenants/tenantID1234";
+        // Act
         $actualTenantDataFolder = $dataFolder->getTenantDataFolder($tenantId);
+        $actualDatabaseFolder = $dataFolder->getTenantDatabaseFolder($tenantId);
+        $actualDatabasePath = $dataFolder->getTenantDatabasePath($tenantId);
+
+        // Assert
+        $expectedTenantDataFolder = $this->tempDataPath . '/tenants/tenantID1234';
         $this->assertEquals($expectedTenantDataFolder, $actualTenantDataFolder);
 
-        // Vérifier que le dossier de base de données est correct
-        $expectedDatabaseFolder = $this->tempDataPath . "/tenants/tenantID1234/database";
-        $actualDatabaseFolder = $dataFolder->getTenantDatabaseFolder($tenantId);
+        $expectedDatabaseFolder = $this->tempDataPath . '/tenants/tenantID1234/database';
         $this->assertEquals($expectedDatabaseFolder, $actualDatabaseFolder);
 
-        // Vérifier que le chemin complet de la base de données est correct
-        $expectedDatabasePath = $this->tempDataPath . "/tenants/tenantID1234/database/mydatabase.sqlite";
-        $actualDatabasePath = $dataFolder->getTenantDatabasePath($tenantId);
+        $expectedDatabasePath = $this->tempDataPath . '/tenants/tenantID1234/database/mydatabase.sqlite';
         $this->assertEquals($expectedDatabasePath, $actualDatabasePath);
     }
 
@@ -106,36 +105,30 @@ class MultiTenantIntegrationTest extends TestCase
      */
     public function testCompleteWorkflowForTenantCreation(): void
     {
-        // Simuler les variables d'environnement selon le README
-        $_ENV["DATA_PATH"] = $this->tempDataPath;
-        $_ENV["DATABASE_URL"] = "sqlite:///%DATA_PATH%/database/mydatabase.sqlite";
-
-        $tenantId = "tenantID1234";
-
-        // Créer un EntityManager de base avec les variables d'environnement actuelles
+        // Arrange
+        $_ENV['DATA_PATH'] = $this->tempDataPath;
+        $_ENV['DATABASE_URL'] = 'sqlite:///%DATA_PATH%/database/mydatabase.sqlite';
+        $tenantId = 'tenantID1234';
         $baseEntityManager = $this->createEntityManagerFromEnv();
-
-        // Utiliser EntityManagerResolver pour obtenir un EntityManager pour le tenant
         $resolver = new EntityManagerResolver($baseEntityManager);
         $tenantEntityManager = $resolver->getEntityManager($tenantId);
-
-        // Créer la base de données et le schéma pour le tenant
         $databaseTools = new DatabaseTools();
+
+        // Act
         $databaseTools->createDatabaseIfNotExists($tenantEntityManager);
 
-        // Vérifier que le fichier de base de données a été créé au bon endroit
-        $expectedDatabasePath = $this->tempDataPath . "/tenants/tenantID1234/database/mydatabase.sqlite";
+        // Assert
+        $expectedDatabasePath = $this->tempDataPath . '/tenants/tenantID1234/database/mydatabase.sqlite';
         $this->assertTrue(
             file_exists($expectedDatabasePath),
-            "Database file should exist at: " . $expectedDatabasePath
+            'Database file should exist at: ' . $expectedDatabasePath
         );
 
-        // Vérifier que la structure de dossiers est créée
-        $expectedTenantFolder = $this->tempDataPath . "/tenants/tenantID1234";
-        $expectedDatabaseFolder = $this->tempDataPath . "/tenants/tenantID1234/database";
+        $expectedTenantFolder = $this->tempDataPath . '/tenants/tenantID1234';
+        $expectedDatabaseFolder = $this->tempDataPath . '/tenants/tenantID1234/database';
 
-        $this->assertTrue(is_dir($expectedTenantFolder), "Tenant folder should exist: " . $expectedTenantFolder);
-        $this->assertTrue(is_dir($expectedDatabaseFolder), "Database folder should exist: " . $expectedDatabaseFolder);
+        $this->assertTrue(is_dir($expectedTenantFolder), 'Tenant folder should exist: ' . $expectedTenantFolder);
+        $this->assertTrue(is_dir($expectedDatabaseFolder), 'Database folder should exist: ' . $expectedDatabaseFolder);
     }
 
     /**
@@ -143,36 +136,30 @@ class MultiTenantIntegrationTest extends TestCase
      */
     public function testMultipleTenantsCoexistence(): void
     {
-        // Simuler les variables d'environnement selon le README
-        $_ENV["DATA_PATH"] = $this->tempDataPath;
-        $_ENV["DATABASE_URL"] = "sqlite:///%DATA_PATH%/database/mydatabase.sqlite";
-
-        $tenant1Id = "tenant1";
-        $tenant2Id = "tenant2";
-
-        // Créer un EntityManager de base avec les variables d'environnement actuelles
+        // Arrange
+        $_ENV['DATA_PATH'] = $this->tempDataPath;
+        $_ENV['DATABASE_URL'] = 'sqlite:///%DATA_PATH%/database/mydatabase.sqlite';
+        $tenant1Id = 'tenant1';
+        $tenant2Id = 'tenant2';
         $baseEntityManager = $this->createEntityManagerFromEnv();
-
-        // Créer les EntityManagers pour chaque tenant
         $resolver = new EntityManagerResolver($baseEntityManager);
         $tenant1EntityManager = $resolver->getEntityManager($tenant1Id);
         $tenant2EntityManager = $resolver->getEntityManager($tenant2Id);
-
-        // Créer les bases de données pour chaque tenant
         $databaseTools = new DatabaseTools();
+
+        // Act
         $databaseTools->createDatabaseIfNotExists($tenant1EntityManager);
         $databaseTools->createDatabaseIfNotExists($tenant2EntityManager);
 
-        // Vérifier que les deux bases de données existent dans des dossiers séparés
-        $expectedDatabase1Path = $this->tempDataPath . "/tenants/tenant1/database/mydatabase.sqlite";
-        $expectedDatabase2Path = $this->tempDataPath . "/tenants/tenant2/database/mydatabase.sqlite";
+        // Assert
+        $expectedDatabase1Path = $this->tempDataPath . '/tenants/tenant1/database/mydatabase.sqlite';
+        $expectedDatabase2Path = $this->tempDataPath . '/tenants/tenant2/database/mydatabase.sqlite';
 
-        $this->assertTrue(file_exists($expectedDatabase1Path), "Tenant 1 database should exist");
-        $this->assertTrue(file_exists($expectedDatabase2Path), "Tenant 2 database should exist");
+        $this->assertTrue(file_exists($expectedDatabase1Path), 'Tenant 1 database should exist');
+        $this->assertTrue(file_exists($expectedDatabase2Path), 'Tenant 2 database should exist');
 
-        // Vérifier que les dossiers sont bien séparés
-        $this->assertTrue(is_dir($this->tempDataPath . "/tenants/tenant1"), "Tenant 1 folder should exist");
-        $this->assertTrue(is_dir($this->tempDataPath . "/tenants/tenant2"), "Tenant 2 folder should exist");
+        $this->assertTrue(is_dir($this->tempDataPath . '/tenants/tenant1'), 'Tenant 1 folder should exist');
+        $this->assertTrue(is_dir($this->tempDataPath . '/tenants/tenant2'), 'Tenant 2 folder should exist');
     }
 
     /**
@@ -180,22 +167,22 @@ class MultiTenantIntegrationTest extends TestCase
      */
     public function testReadmeExampleStructure(): void
     {
+        // Arrange
         // Exemple exact du README :
         // DATA_PATH=./var/data
         // DATABASE_URL=sqlite:///%DATA_PATH%/database/mydatabase.sqlite
         // Given the tenant "tenantID1234", the database create command will create the following file:
         // ./var/data/tenants/tenantID1234/database/mydatabase.sqlite
-
-        $_ENV["DATA_PATH"] = "./var/data";
-        $_ENV["DATABASE_URL"] = "sqlite:///%DATA_PATH%/database/mydatabase.sqlite";
-
-        $tenantId = "tenantID1234";
+        $_ENV['DATA_PATH'] = './var/data';
+        $_ENV['DATABASE_URL'] = 'sqlite:///%DATA_PATH%/database/mydatabase.sqlite';
+        $tenantId = 'tenantID1234';
         $dataFolder = new DataFolder();
 
-        // Vérifier que le chemin généré correspond exactement à l'exemple du README
-        $expectedPath = "./var/data/tenants/tenantID1234/database/mydatabase.sqlite";
+        // Act
         $actualPath = $dataFolder->getTenantDatabasePath($tenantId);
 
+        // Assert
+        $expectedPath = './var/data/tenants/tenantID1234/database/mydatabase.sqlite';
         $this->assertEquals($expectedPath, $actualPath);
     }
 }

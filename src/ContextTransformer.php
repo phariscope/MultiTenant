@@ -4,6 +4,7 @@ namespace Phariscope\MultiTenant;
 
 use Phariscope\MultiTenant\Doctrine\Sqlite\PathTransformer;
 use Phariscope\MultiTenant\Doctrine\Tools\TenantManager;
+use Phariscope\MultiTenant\Infrastructure\TenantShortname\TenantShortnameRegistry;
 use Phariscope\MultiTenant\Share\TenantDataPath;
 
 class ContextTransformer
@@ -38,11 +39,21 @@ class ContextTransformer
     private function extractTenantIdFromContext(): ?string
     {
         $tenantId = $this->extractTenantIdFromArgv();
-        if ($tenantId === null) {
-            $tenantManager = new TenantManager();
-            $tenantId = $tenantManager->getCurrentTenantId();
+        if ($tenantId !== null) {
+            return $tenantId;
         }
-        return $tenantId;
+
+        $shortname = $this->extractTenantShortnameFromArgv();
+        if ($shortname !== null && $this->initialDataPath !== null) {
+            $registry = TenantShortnameRegistry::fromApplicationDataPath($this->initialDataPath);
+            $resolved = $registry->resolveTenantId($shortname);
+            if ($resolved !== null) {
+                return $resolved;
+            }
+        }
+
+        $tenantManager = new TenantManager();
+        return $tenantManager->getCurrentTenantId();
     }
 
     private function extractTenantIdFromArgv(): ?string
@@ -64,6 +75,29 @@ class ContextTransformer
         foreach ($argv as $arg) {
             if (strpos($arg, '--tenant_id=') === 0) {
                 return substr($arg, strlen('--tenant_id='));
+            }
+        }
+
+        return null;
+    }
+
+    private function extractTenantShortnameFromArgv(): ?string
+    {
+        if (!isset($this->context['argv']) || !is_array($this->context['argv'])) {
+            return null;
+        }
+
+        $argv = $this->context['argv'];
+
+        for ($i = 0; $i < count($argv) - 1; $i++) {
+            if ($argv[$i] === '--tenant_shortname') {
+                return $argv[$i + 1];
+            }
+        }
+
+        foreach ($argv as $arg) {
+            if (strpos($arg, '--tenant_shortname=') === 0) {
+                return substr($arg, strlen('--tenant_shortname='));
             }
         }
 

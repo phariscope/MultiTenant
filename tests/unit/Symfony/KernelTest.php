@@ -9,8 +9,13 @@ class KernelTest extends TestCase
 {
     public function testConstruct(): void
     {
+        // Arrange
+        // (environment and debug flags)
 
-        $kernel = new Kernel("test", true);
+        // Act
+        $kernel = new Kernel('test', true);
+
+        // Assert
         $this->assertInstanceOf(Kernel::class, $kernel);
         $this->assertTrue($kernel->isDebug());
     }

@@ -13,13 +13,17 @@ class ParamsConnectionTest extends TestCase
      */
     public function testGetParamReturnsValueWhenKeyExists(): void
     {
+        // Arrange
         $params = [
             'dbname' => 'tenant_db',
             'user' => 'tenant_user',
-            'password' => 'secret'
+            'password' => 'secret',
         ];
 
+        // Act
         $result = ParamsConnection::getParam($params, 'dbname');
+
+        // Assert
         $this->assertEquals('tenant_db', $result);
     }
 
@@ -28,15 +32,18 @@ class ParamsConnectionTest extends TestCase
      */
     public function testGetParamThrowsExceptionWhenKeyDoesNotExist(): void
     {
+        // Arrange
+        $params = [
+            'dbname' => 'tenant_db',
+            'user' => 'tenant_user',
+        ];
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Password not found');
 
-        $params = [
-            'dbname' => 'tenant_db',
-            'user' => 'tenant_user'
-        ];
-
+        // Act
         ParamsConnection::getParam($params, 'password');
+
+        // Assert - PHPUnit verifies the exception
     }
 
     /**
@@ -44,14 +51,17 @@ class ParamsConnectionTest extends TestCase
      */
     public function testGetParamExceptionMessage(): void
     {
+        // Arrange
+        $params = [
+            'dbname' => 'tenant_db',
+            'password' => 'secret',
+        ];
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('User not found');
 
-        $params = [
-            'dbname' => 'tenant_db',
-            'password' => 'secret'
-        ];
-
+        // Act
         ParamsConnection::getParam($params, 'user');
+
+        // Assert - PHPUnit verifies the exception
     }
 }

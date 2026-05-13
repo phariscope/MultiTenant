@@ -5,6 +5,7 @@ namespace Phariscope\MultiTenant\Application\Service\Tenant\CreateTenant;
 use Phariscope\MultiTenant\Domain\Model\Tenant\Tenant;
 use Phariscope\MultiTenant\Domain\Model\Tenant\TenantId;
 use Phariscope\MultiTenant\Domain\Model\Tenant\TenantRepositoryInterface;
+use Phariscope\MultiTenant\Infrastructure\TenantShortname\TenantShortnameRegistry;
 
 class CreateTenantService
 {
@@ -12,6 +13,7 @@ class CreateTenantService
 
     public function __construct(
         private TenantRepositoryInterface $tenantRepository,
+        private readonly ?TenantShortnameRegistry $shortnameRegistry = null,
     ) {
     }
 
@@ -24,6 +26,16 @@ class CreateTenantService
             userEmail: $request->userEmail,
         );
         $this->tenantRepository->create($tenant);
+
+        if ($request->tenantShortname !== null && $request->tenantShortname !== '') {
+            $registry = $this->shortnameRegistry ?? TenantShortnameRegistry::tryCreateFromEnv();
+            if ($registry === null) {
+                throw new \RuntimeException(
+                    'tenant_shortname was provided but DATA_PATH is not set; cannot write tenants/tenants.sqlite.'
+                );
+            }
+            $registry->register($tenant->getTenantId(), $request->tenantShortname);
+        }
 
         $this->response = new CreateTenantResponse(
             tenantId: $tenant->getTenantId(),

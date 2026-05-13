@@ -11,15 +11,16 @@ class PresenterStandardResponseTest extends TestCase
 {
     public function testWriteAndRead(): void
     {
+        // Arrange
         $sut = new PresenterStandardResponse();
-
-        $this->assertInstanceOf(PresenterInterface::class, $sut);
         $response = new ResponseFake();
 
+        // Act
         $sut->write($response);
-
         $result = $sut->read();
 
+        // Assert
+        $this->assertInstanceOf(PresenterInterface::class, $sut);
         $this->assertInstanceOf(Response::class, $result);
     }
 }

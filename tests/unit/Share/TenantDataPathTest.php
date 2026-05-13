@@ -52,26 +52,24 @@ class TenantDataPathTest extends TestCase
 
     public function testNoDataPathEnvException(): void
     {
+        // Arrange
+        $savedEnvDataPath = $_ENV['DATA_PATH'] ?? null;
+        unset($_ENV['DATA_PATH']);
         $this->expectException(DataPathException::class);
         $this->expectExceptionMessage('DATA_PATH environment variable is not set');
-
-        // Arrange
-        $tenantId = 'tenant123';
-
-        if (isset($_ENV['DATA_PATH'])) {
-            $savedEnvDataPath = $_ENV['DATA_PATH'];
-        }
-        unset($_ENV['DATA_PATH']);
-
-        // Act
         $sut = new TenantDataPath();
-        $result = $sut->getTenantDataPath($tenantId);
 
-        // clean up
-        if (isset($savedEnvDataPath)) {
-            $_ENV['DATA_PATH'] = $savedEnvDataPath;
-        } else {
-            unset($_ENV['DATA_PATH']);
+        try {
+            // Act
+            $sut->getTenantDataPath('tenant123');
+        } finally {
+            if ($savedEnvDataPath !== null) {
+                $_ENV['DATA_PATH'] = $savedEnvDataPath;
+            } else {
+                unset($_ENV['DATA_PATH']);
+            }
         }
+
+        // Assert - PHPUnit verifies the exception
     }
 }

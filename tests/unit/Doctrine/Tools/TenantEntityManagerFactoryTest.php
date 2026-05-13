@@ -24,12 +24,16 @@ class TenantEntityManagerFactoryTest extends TestCase
 
     public function testCreateSqliteEntityManager(): void
     {
+        // Arrange
         $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
         $sut = new TenantEntityManagerFactory();
-        $result = $sut->createSqliteEntityManager($em, 'tenant123');
 
-        $this->assertEquals(true, $result instanceof EntityManager);
+        // Act
+        $result = $sut->createSqliteEntityManager($em, 'tenant123');
         $params = $result->getConnection()->getParams();
+
+        // Assert
+        $this->assertEquals(true, $result instanceof EntityManager);
         $this->assertStringEndsWith(
             'tenants/tenant123/subfolder/database.sqlite',
             strval($this->getParam($params, 'path'))
@@ -51,11 +55,15 @@ class TenantEntityManagerFactoryTest extends TestCase
 
     public function testCreateTenantMariadbEntityManager(): void
     {
+        // Arrange
         $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
         $sut = new TenantEntityManagerFactory();
-        $result = $sut->createMariadbEntityManager($em, 'tenant123');
 
+        // Act
+        $result = $sut->createMariadbEntityManager($em, 'tenant123');
         $params = $result->getConnection()->getParams();
+
+        // Assert
         $this->assertEquals(true, $result instanceof EntityManager);
         $this->assertEquals('mydbname_tenant123', $this->getParam($params, 'dbname'));
         $this->assertEquals('pdo_mysql', $this->getParam($params, 'driver'));
@@ -67,11 +75,16 @@ class TenantEntityManagerFactoryTest extends TestCase
 
     public function testSqliteMemoryException(): void
     {
+        // Arrange
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('SQlite Memory database is not supported');
 
         $em = (new FakeEntityManagerFactory())->createSqliteInMemoryEntityManager();
         $sut = new TenantEntityManagerFactory();
+
+        // Act
         $sut->createSqliteEntityManager($em, 'tenant123');
+
+        // Assert - PHPUnit verifies the exception
     }
 }

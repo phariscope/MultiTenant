@@ -9,30 +9,56 @@ class TenantIdTest extends TestCase
 {
     public function testTenantIdIsCreatedWithPrefix(): void
     {
-        $TenantId = new TenantId();
-        $this->assertInstanceOf(TenantId::class, $TenantId);
-        $this->assertStringStartsWith(TenantId::PREFIX, (string)$TenantId);
+        // Arrange
+        // (no input: auto-generated id)
+
+        // Act
+        $tenantId = new TenantId();
+
+        // Assert
+        $this->assertInstanceOf(TenantId::class, $tenantId);
+        $this->assertStringStartsWith(TenantId::PREFIX, (string) $tenantId);
     }
 
     public function testTenantIdAreEqual(): void
     {
-        $TenantId1 = new TenantId('1');
-        $TenantId2 = new TenantId('1');
-        $this->assertEquals($TenantId1, $TenantId2);
-        $this->assertTrue($TenantId1->equals($TenantId2));
+        // Arrange
+        $tenantId1 = new TenantId('1');
+        $tenantId2 = new TenantId('1');
+
+        // Act
+        $equals = $tenantId1->equals($tenantId2);
+
+        // Assert
+        $this->assertEquals($tenantId1, $tenantId2);
+        $this->assertTrue($equals);
     }
+
     public function testTenantIdAreNotEqual(): void
     {
-        $TenantId1 = new TenantId('1');
-        $TenantId2 = new TenantId('2');
-        $this->assertNotEquals($TenantId1, $TenantId2);
-        $this->assertFalse($TenantId1->equals($TenantId2));
+        // Arrange
+        $tenantId1 = new TenantId('1');
+        $tenantId2 = new TenantId('2');
+
+        // Act
+        $equals = $tenantId1->equals($tenantId2);
+
+        // Assert
+        $this->assertNotEquals($tenantId1, $tenantId2);
+        $this->assertFalse($equals);
     }
+
     public function testTenantIdGeneratedNaturalyAreNotEqual(): void
     {
-        $TenantId1 = new TenantId();
-        $TenantId2 = new TenantId();
-        $this->assertNotEquals($TenantId1, $TenantId2);
-        $this->assertFalse($TenantId1->equals($TenantId2));
+        // Arrange
+        $tenantId1 = new TenantId();
+        $tenantId2 = new TenantId();
+
+        // Act
+        $equals = $tenantId1->equals($tenantId2);
+
+        // Assert
+        $this->assertNotEquals($tenantId1, $tenantId2);
+        $this->assertFalse($equals);
     }
 }

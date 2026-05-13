@@ -86,7 +86,7 @@ class DatabaseToolsTest extends TestCase
         $params = $em->getConnection()->getParams();
         $path = strval(ParamsConnection::getParam($params, 'path'));
         $this->assertStringEndsWith(FakeEntityManagerFactory::SQLITE_DATABASE_PATH, $path);
-    }   
+    }
 
     public function testUpdateSchema(): void
     {
@@ -111,7 +111,7 @@ class DatabaseToolsTest extends TestCase
         // Arrange
         $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
         $sut = new DatabaseTools();
-        
+
         // Act
         $sut->createDatabase($em);
         $sqls = $sut->getUpdateSchemaSql($em);
