@@ -9,17 +9,29 @@ class DataFolderTest extends TestCase
 {
     public function testGetDataRootFolder(): void
     {
-        $_ENV["DATA_PATH"] = "/var/data";
+        // Arrange
+        $_ENV['DATA_PATH'] = '/var/data';
         $dataFolder = new DataFolder();
-        $this->assertEquals('/var/data', $dataFolder->getDataRootFolder());
+
+        // Act
+        $result = $dataFolder->getDataRootFolder();
+
+        // Assert
+        $this->assertEquals('/var/data', $result);
     }
 
     public function testGetTenantDataFolder(): void
     {
-        $_ENV["DATA_PATH"] = "/var/data";
-        $_ENV["TENANT_ID"] = "tenant1";
+        // Arrange
+        $_ENV['DATA_PATH'] = '/var/data';
+        $_ENV['TENANT_ID'] = 'tenant1';
         $dataFolder = new DataFolder();
-        $this->assertEquals('/var/data/tenants/tenant1', $dataFolder->getTenantDataFolder());
+
+        // Act
+        $result = $dataFolder->getTenantDataFolder();
+
+        // Assert
+        $this->assertEquals('/var/data/tenants/tenant1', $result);
     }
 
     /**
@@ -27,13 +39,16 @@ class DataFolderTest extends TestCase
      */
     public function testGetTenantDataFolderWithTenantId(): void
     {
-        $_ENV["DATA_PATH"] = "/var/data";
+        // Arrange
+        $_ENV['DATA_PATH'] = '/var/data';
         $dataFolder = new DataFolder();
-        $tenantId = "tenantID1234";
+        $tenantId = 'tenantID1234';
+        $expectedPath = '/var/data/tenants/tenantID1234';
 
-        $expectedPath = "/var/data/tenants/tenantID1234";
+        // Act
         $actualPath = $dataFolder->getTenantDataFolder($tenantId);
 
+        // Assert
         $this->assertEquals($expectedPath, $actualPath);
     }
 
@@ -42,41 +57,48 @@ class DataFolderTest extends TestCase
      */
     public function testGetTenantDatabaseFolder(): void
     {
-        $_ENV["DATA_PATH"] = "/var/data";
+        // Arrange
+        $_ENV['DATA_PATH'] = '/var/data';
         $dataFolder = new DataFolder();
-        $tenantId = "tenantID1234";
+        $tenantId = 'tenantID1234';
+        $expectedPath = '/var/data/tenants/tenantID1234/database';
 
-        $expectedPath = "/var/data/tenants/tenantID1234/database";
+        // Act
         $actualPath = $dataFolder->getTenantDatabaseFolder($tenantId);
 
+        // Assert
         $this->assertEquals($expectedPath, $actualPath);
     }
 
     public function testGetTenantDatabasePath(): void
     {
-        $_ENV["DATA_PATH"] = "/var/data";
-        $_ENV["DATABASE_URL"] = "sqlite:///%DATA_PATH%/database/mydatabase.sqlite";
-
+        // Arrange
+        $_ENV['DATA_PATH'] = '/var/data';
+        $_ENV['DATABASE_URL'] = 'sqlite:///%DATA_PATH%/database/mydatabase.sqlite';
         $dataFolder = new DataFolder();
-        $tenantId = "tenantID1234";
+        $tenantId = 'tenantID1234';
+        $expectedPath = '/var/data/tenants/tenantID1234/database/mydatabase.sqlite';
 
-        $expectedPath = "/var/data/tenants/tenantID1234/database/mydatabase.sqlite";
+        // Act
         $actualPath = $dataFolder->getTenantDatabasePath($tenantId);
 
+        // Assert
         $this->assertEquals($expectedPath, $actualPath);
     }
 
     public function testGetTenantDatabasePathWithComplexDatabaseUrl(): void
     {
-        $_ENV["DATA_PATH"] = "/var/data";
-        $_ENV["DATABASE_URL"] = "sqlite:///%DATA_PATH%/db/subfolder/databasename";
-
+        // Arrange
+        $_ENV['DATA_PATH'] = '/var/data';
+        $_ENV['DATABASE_URL'] = 'sqlite:///%DATA_PATH%/db/subfolder/databasename';
         $dataFolder = new DataFolder();
-        $tenantId = "tenantID1234";
+        $tenantId = 'tenantID1234';
+        $expectedPath = '/var/data/tenants/tenantID1234/db/subfolder/databasename';
 
-        $expectedPath = "/var/data/tenants/tenantID1234/db/subfolder/databasename";
+        // Act
         $actualPath = $dataFolder->getTenantDatabasePath($tenantId);
 
+        // Assert
         $this->assertEquals($expectedPath, $actualPath);
     }
 
@@ -85,25 +107,32 @@ class DataFolderTest extends TestCase
      */
     public function testGetTenantDataFolderWithRelativePath(): void
     {
-        $_ENV["DATA_PATH"] = "./var/data";
+        // Arrange
+        $_ENV['DATA_PATH'] = './var/data';
         $dataFolder = new DataFolder();
-        $tenantId = "tenantID1234";
+        $tenantId = 'tenantID1234';
+        $expectedPath = './var/data/tenants/tenantID1234';
 
-        $expectedPath = "./var/data/tenants/tenantID1234";
+        // Act
         $actualPath = $dataFolder->getTenantDataFolder($tenantId);
 
+        // Assert
         $this->assertEquals($expectedPath, $actualPath);
     }
 
     public function testUnrecognizedDatabaseUrlException(): void
     {
+        // Arrange
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage("DATABASE_URL 'sqlite:///%DATA_PATH%@' is not a valid SQLite URL");
 
-        $_ENV["DATABASE_URL"] = "sqlite:///%DATA_PATH%@";
-        $_ENV["DATA_PATH"] = "/var/data";
-
+        $_ENV['DATABASE_URL'] = 'sqlite:///%DATA_PATH%@';
+        $_ENV['DATA_PATH'] = '/var/data';
         $dataFolder = new DataFolder();
-        $dataFolder->getTenantDatabasePath("tenantID1234");
+
+        // Act
+        $dataFolder->getTenantDatabasePath('tenantID1234');
+
+        // Assert - PHPUnit verifies the exception
     }
 }

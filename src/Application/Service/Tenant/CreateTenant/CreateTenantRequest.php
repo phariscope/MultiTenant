@@ -8,6 +8,7 @@ class CreateTenantRequest
         public readonly string $tenantId,
         public readonly string $tenantName,
         public readonly string $userEmail,
+        public readonly ?string $tenantShortname = null,
     ) {
     }
 }

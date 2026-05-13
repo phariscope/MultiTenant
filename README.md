@@ -138,6 +138,28 @@ Apply the changes:
 bin/console tenant:schema:update --tenant_id tenantID1234 --force
 ```
 
+# Tenant shortname (`tenant_shortname`)
+
+Applications can expose a **human-friendly** hostname or path segment (`tenant_shortname`) instead of the canonical `tenant_id`. Resolution uses a small SQLite registry stored next to tenant data:
+
+- If `DATA_PATH` is the host root (e.g. `./var/data`), the registry file is `./var/data/tenants/tenants.sqlite`.
+- If `DATA_PATH` already points to a tenant folder (e.g. `./var/data/tenants/tenantID1234`), the registry is still `./var/data/tenants/tenants.sqlite` (same file for all tenants).
+
+**Storage paths** (`DATA_PATH` tenant suffix and SQLite `DATABASE_URL` rewriting) always use the resolved **`tenant_id`**, never the shortname string.
+
+Supported inputs mirror `tenant_id`: query/body parameters, session keys, cookies, JSON body fields, and headers `X-Tenant-Shortname` / `HTTP_X_TENANT_SHORTNAME`. CLI supports `--tenant_shortname` / `--tenant_shortname=value` (same style as `--tenant_id`). If both `tenant_id` and `tenant_shortname` are present, **`tenant_id` wins**.
+
+When creating a tenant programmatically, pass optional `tenantShortname` on `CreateTenantRequest` and inject `TenantShortnameRegistry` (or set `DATA_PATH` so the service can open the registry automatically).
+
+Console examples:
+
+```bash
+bin/console tenant:database:create --tenant_shortname my-school
+bin/console tenant:schema:create --tenant_shortname my-school
+```
+
+For bundle commands (`tenant:database:create`, `tenant:schema:create`, `tenant:schema:update`), pass **exactly one** of `--tenant_id` or `--tenant_shortname`. If you pass both, the command fails with: `Provide either --tenant_id or --tenant_shortname, not both.`
+
 # How it works
 
 A "tenants" subfolder will be created in the DATA_PATH. For each tenant, a specific folder will be created containing all the data, including the database.

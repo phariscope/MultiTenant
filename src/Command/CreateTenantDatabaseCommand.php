@@ -6,10 +6,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Phariscope\MultiTenant\Doctrine\DatabaseTools;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
-
-use function SafePHP\strval;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class CreateTenantDatabaseCommand extends Command
 {
@@ -26,12 +24,25 @@ class CreateTenantDatabaseCommand extends Command
         $this
             ->setName('tenant:database:create')
             ->setDescription('Creates a new database for a tenant.')
-            ->addOption('tenant_id', null, InputOption::VALUE_REQUIRED, 'The ID of the tenant');
+            ->addOption('tenant_id', null, InputOption::VALUE_OPTIONAL, 'The canonical tenant id', null)
+            ->addOption(
+                'tenant_shortname',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Tenant shortname (resolved via tenants/tenants.sqlite under DATA_PATH)',
+                null
+            );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $tenantId = strval($input->getOption('tenant_id'));
+        try {
+            $tenantId = TenantConsoleOptionResolver::resolveTenantId($input);
+        } catch (\Throwable $e) {
+            $output->writeln('<error>' . $e->getMessage() . '</error>');
+
+            return Command::FAILURE;
+        }
 
         try {
             $databaseTools = new DatabaseTools();

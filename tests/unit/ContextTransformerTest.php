@@ -3,7 +3,9 @@
 namespace Phariscope\MultiTenant\Tests;
 
 use Phariscope\MultiTenant\ContextTransformer;
+use Phariscope\MultiTenant\Infrastructure\TenantShortname\TenantShortnameRegistry;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Filesystem\Filesystem;
 
 class ContextTransformerTest extends TestCase
 {
@@ -39,6 +41,7 @@ class ContextTransformerTest extends TestCase
 
     public function testTransformDataPathWithTenantIdInArgv(): void
     {
+        // Arrange
         $context = [
             'DATA_PATH' => './var/tmp/data/app',
             'argv' => [
@@ -49,9 +52,11 @@ class ContextTransformerTest extends TestCase
             ]
         ];
 
+        // Act
         $transformer = new ContextTransformer($context);
         $transformer->transformDataPath();
 
+        // Assert
         $this->assertEnvValue('DATA_PATH', './var/tmp/data/app/tenants/t1234');
     }
 
@@ -64,6 +69,7 @@ class ContextTransformerTest extends TestCase
 
     public function testTransformDataPathWithTenantIdInArgvWithEqualSign(): void
     {
+        // Arrange
         $context = [
             'DATA_PATH' => './var/tmp/data/app',
             'argv' => [
@@ -73,14 +79,17 @@ class ContextTransformerTest extends TestCase
             ]
         ];
 
+        // Act
         $transformer = new ContextTransformer($context);
         $transformer->transformDataPath();
 
+        // Assert
         $this->assertEnvValue('DATA_PATH', './var/tmp/data/app/tenants/t1234');
     }
 
     public function testTransformDataPathWithoutTenantId(): void
     {
+        // Arrange
         $context = [
             'DATA_PATH' => './var/tmp/data/app',
             'argv' => [
@@ -89,15 +98,17 @@ class ContextTransformerTest extends TestCase
             ]
         ];
 
+        // Act
         $transformer = new ContextTransformer($context);
         $transformer->transformDataPath();
 
-        // DATA_PATH should remain unchanged if no tenant_id is provided
+        // Assert
         $this->assertEquals('./var/tmp/data/app', $context['DATA_PATH']);
     }
 
     public function testTransformDatabaseUrlWithTenantIdInArgv(): void
     {
+        // Arrange
         $context = [
             'DATA_PATH' => './var/tmp/data/app',
             'DATABASE_URL' => 'sqlite:///var/tmp/data/app/sqlite/data.sqlite',
@@ -109,9 +120,11 @@ class ContextTransformerTest extends TestCase
             ]
         ];
 
+        // Act
         $transformer = new ContextTransformer($context);
         $transformer->transformDatabaseUrl();
 
+        // Assert
         $this->assertEnvValue(
             'DATABASE_URL',
             'sqlite:///var/tmp/data/app/tenants/t1234/sqlite/data.sqlite',
@@ -120,6 +133,7 @@ class ContextTransformerTest extends TestCase
 
     public function testTransformDatabaseUrlWithoutTenantId(): void
     {
+        // Arrange
         $context = [
             'DATABASE_URL' => 'sqlite:///var/tmp/data/app/sqlite/data.sqlite',
             'argv' => [
@@ -128,15 +142,17 @@ class ContextTransformerTest extends TestCase
             ]
         ];
 
+        // Act
         $transformer = new ContextTransformer($context);
         $transformer->transformDatabaseUrl();
 
-        // DATABASE_URL should remain unchanged if no tenant_id is provided
+        // Assert
         $this->assertEquals('sqlite:///var/tmp/data/app/sqlite/data.sqlite', $context['DATABASE_URL']);
     }
 
     public function testDatabaseUrlShouldRemainUnchangedWithoutDataPath(): void
     {
+        // Arrange
         $context = [
             'DATABASE_URL' => 'sqlite:///var/tmp/data/app/sqlite/data.sqlite',
             'argv' => [
@@ -147,15 +163,17 @@ class ContextTransformerTest extends TestCase
             ]
         ];
 
+        // Act
         $transformer = new ContextTransformer($context);
         $transformer->transformDatabaseUrl();
 
-        // DATABASE_URL should remain unchanged if no tenant_id is provided
+        // Assert
         $this->assertEquals('sqlite:///var/tmp/data/app/sqlite/data.sqlite', $context['DATABASE_URL']);
     }
 
     public function testExtractTenantIdFromArgv(): void
     {
+        // Arrange
         $context = [
             'argv' => [
                 'bin/console',
@@ -170,12 +188,16 @@ class ContextTransformerTest extends TestCase
         $method = $reflection->getMethod('extractTenantIdFromArgv');
         $method->setAccessible(true);
 
+        // Act
         $tenantId = $method->invokeArgs($transformer, []);
+
+        // Assert
         $this->assertEquals('t1234', $tenantId);
     }
 
     public function testExtractTenantIdFromArgvWithoutTenantId(): void
     {
+        // Arrange
         $context = [
             'argv' => [
                 'bin/console',
@@ -188,7 +210,10 @@ class ContextTransformerTest extends TestCase
         $method = $reflection->getMethod('extractTenantIdFromArgv');
         $method->setAccessible(true);
 
+        // Act
         $tenantId = $method->invokeArgs($transformer, []);
+
+        // Assert
         $this->assertNull($tenantId);
     }
 
@@ -260,6 +285,7 @@ class ContextTransformerTest extends TestCase
 
     public function testShouldTransformInHttpContext(): void
     {
+        // Arrange
         $context = [
             'DATABASE_URL' => 'sqlite:///var/tmp/data/app/sqlite/data.sqlite',
             'DATA_PATH' => './var/tmp/data/app',
@@ -267,14 +293,123 @@ class ContextTransformerTest extends TestCase
 
         $_SERVER['HTTP_X_TENANT_ID'] = 't1234';
 
+        // Act
         $transformer = new ContextTransformer($context);
         $transformer->transformDataPath();
         $transformer->transformDatabaseUrl();
 
+        // Assert
         $this->assertEquals('./var/tmp/data/app/tenants/t1234', $context['DATA_PATH']);
         $this->assertEquals(
             'sqlite:///var/tmp/data/app/tenants/t1234/sqlite/data.sqlite',
             $context['DATABASE_URL']
         );
+    }
+
+    public function testTransformDataPathWithTenantShortnameInArgv(): void
+    {
+        // Arrange
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+        $base = sys_get_temp_dir() . '/mt-ctxsn-' . uniqid('', true);
+
+        try {
+            $registry = TenantShortnameRegistry::fromApplicationDataPath($base);
+            $registry->register('tid-slug', 'acme');
+
+            $context = [
+                'DATA_PATH' => $base,
+                'argv' => [
+                    'bin/console',
+                    'tenant:database:create',
+                    '--tenant_shortname',
+                    'acme',
+                ],
+            ];
+
+            $expected = $base . '/tenants/tid-slug';
+
+            // Act
+            $transformer = new ContextTransformer($context);
+            $transformer->transformDataPath();
+
+            // Assert
+            $this->assertEnvValue('DATA_PATH', $expected);
+        } finally {
+            (new Filesystem())->remove($base);
+            if ($hadKey && is_string($previous)) {
+                $_ENV['DATA_PATH'] = $previous;
+                putenv('DATA_PATH=' . $previous);
+            } else {
+                unset($_ENV['DATA_PATH']);
+                putenv('DATA_PATH');
+            }
+        }
+    }
+
+    public function testTransformDatabaseUrlLeavesNonSqliteUrlUnchanged(): void
+    {
+        // Arrange
+        $context = [
+            'DATA_PATH' => './var/tmp/data/app',
+            'DATABASE_URL' => 'mysql://user:pass@127.0.0.1:3306/appdb',
+            'argv' => [
+                'bin/console',
+                'tenant:database:create',
+                '--tenant_id',
+                't1',
+            ],
+        ];
+
+        // Act
+        $transformer = new ContextTransformer($context);
+        $transformer->transformDatabaseUrl();
+
+        // Assert
+        $this->assertSame('mysql://user:pass@127.0.0.1:3306/appdb', $context['DATABASE_URL']);
+    }
+
+    public function testExtractTenantShortnameFromArgvSupportsEqualsSyntax(): void
+    {
+        // Arrange
+        $context = [
+            'argv' => [
+                'bin/console',
+                'some:command',
+                '--tenant_shortname=brand-one',
+            ],
+        ];
+        $transformer = new ContextTransformer($context);
+        $reflection = new \ReflectionClass($transformer);
+        $method = $reflection->getMethod('extractTenantShortnameFromArgv');
+        $method->setAccessible(true);
+
+        // Act
+        $shortname = $method->invoke($transformer);
+
+        // Assert
+        $this->assertSame('brand-one', $shortname);
+    }
+
+    public function testExtractTenantIdFromArgvSpaceSeparatedForm(): void
+    {
+        // Arrange
+        $context = [
+            'argv' => [
+                'bin/console',
+                'tenant:database:create',
+                '--tenant_id',
+                'only-space-form',
+            ],
+        ];
+        $transformer = new ContextTransformer($context);
+        $method = (new \ReflectionClass($transformer))->getMethod('extractTenantIdFromArgv');
+        $method->setAccessible(true);
+
+        // Act
+        $tenantId = $method->invoke($transformer);
+
+        // Assert
+        $this->assertSame('only-space-form', $tenantId);
     }
 }

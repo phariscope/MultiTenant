@@ -11,18 +11,32 @@ use Symfony\Component\Filesystem\Filesystem;
 
 class TenantRepositoryTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        (new FakeEntityManagerFactory())->cleanSqliteDatabase();
+    }
+
+    protected function tearDown(): void
+    {
+        (new FakeEntityManagerFactory())->cleanSqliteDatabase();
+        parent::tearDown();
+    }
+
     public function testCreateTenant(): void
     {
-
+        // Arrange
         $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
-
         $tenantRepository = new TenantRepository($em);
         $tenant = new Tenant(new TenantId(), 'Campus26', 'user@campus26.com');
+
+        // Act
         $tenantRepository->create($tenant);
 
+        // Assert
         $this->assertFileExists(getcwd() . FakeEntityManagerFactory::SQLITE_DATABASE_PATH);
 
-       // clean tenant remove folder
+        // Clean up tenant folder
         $fs = new Filesystem();
         $fs->remove(getcwd() . FakeEntityManagerFactory::DATA_PATH);
     }

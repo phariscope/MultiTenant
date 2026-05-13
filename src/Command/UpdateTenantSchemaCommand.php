@@ -9,8 +9,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-use function SafePHP\strval;
-
 class UpdateTenantSchemaCommand extends Command
 {
     private EntityManagerInterface $entityManager;
@@ -26,7 +24,14 @@ class UpdateTenantSchemaCommand extends Command
         $this
             ->setName('tenant:schema:update')
             ->setDescription('Updates the database schema for a tenant to match the current mapping.')
-            ->addOption('tenant_id', null, InputOption::VALUE_REQUIRED, 'The ID of the tenant')
+            ->addOption('tenant_id', null, InputOption::VALUE_OPTIONAL, 'The canonical tenant id', null)
+            ->addOption(
+                'tenant_shortname',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'Tenant shortname (resolved via tenants/tenants.sqlite under DATA_PATH)',
+                null
+            )
             ->addOption(
                 'dump-sql',
                 null,
@@ -43,7 +48,14 @@ class UpdateTenantSchemaCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $tenantId = strval($input->getOption('tenant_id'));
+        try {
+            $tenantId = TenantConsoleOptionResolver::resolveTenantId($input);
+        } catch (\Throwable $e) {
+            $output->writeln('<error>' . $e->getMessage() . '</error>');
+
+            return Command::FAILURE;
+        }
+
         $dumpSql = $input->getOption('dump-sql') === true;
         $force = $input->getOption('force') === true;
 

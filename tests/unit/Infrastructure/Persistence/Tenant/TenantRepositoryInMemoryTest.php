@@ -11,9 +11,14 @@ class TenantRepositoryInMemoryTest extends TestCase
 {
     public function testCreateTenant(): void
     {
+        // Arrange
         $tenantRepository = new TenantRepositoryInMemory();
         $tenant = new Tenant(new TenantId(), 'Campus26', 'user@campus26.com');
+
+        // Act
         $tenantRepository->create($tenant);
+
+        // Assert
         $this->assertCount(1, $tenantRepository->getTenants());
     }
 }

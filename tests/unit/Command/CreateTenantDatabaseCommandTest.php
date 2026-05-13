@@ -44,14 +44,16 @@ class CreateTenantDatabaseCommandTest extends TestCase
 
     public function testExecuteSuccess(): void
     {
-
+        // Arrange
         $tenantId = 'tenant123';
 
+        // Act
         $this->commandTester->execute([
             '--tenant_id' => $tenantId,
             '--verbose' => 2,
         ]);
 
+        // Assert
         $this->assertConsoleSuccessOutput($tenantId);
     }
 
