@@ -20,28 +20,22 @@ class CreateTenantService
     public function execute(CreateTenantRequest $request): void
     {
 
-        $tenant = new Tenant(
-            tenantId: new TenantId($request->tenantId),
-            name: $request->tenantName,
-            userEmail: $request->userEmail,
-        );
+        $tenant = new Tenant(tenantId: new TenantId($request->tenantId));
         $this->tenantRepository->create($tenant);
 
-        if ($request->tenantShortname !== null && $request->tenantShortname !== '') {
-            $registry = $this->shortnameRegistry ?? TenantShortnameRegistry::tryCreateFromEnv();
-            if ($registry === null) {
-                throw new \RuntimeException(
-                    'tenant_shortname was provided but DATA_PATH is not set; cannot write tenants/tenants.sqlite.'
-                );
-            }
-            $registry->register($tenant->getTenantId(), $request->tenantShortname);
+        $registry = $this->shortnameRegistry ?? TenantShortnameRegistry::tryCreateFromEnv();
+        if ($registry === null) {
+            throw new \RuntimeException(
+                'DATA_PATH is not set; cannot write tenant shortname mapping to tenants/tenants.sqlite.'
+            );
         }
 
-        $this->response = new CreateTenantResponse(
-            tenantId: $tenant->getTenantId(),
-            tenantName: $tenant->getName(),
-            userEmail: $tenant->getUserEmail(),
-        );
+        $shortname = $request->tenantShortname !== null && $request->tenantShortname !== ''
+            ? $request->tenantShortname
+            : $tenant->getTenantId();
+        $registry->register($tenant->getTenantId(), $shortname);
+
+        $this->response = new CreateTenantResponse(tenantId: $tenant->getTenantId());
     }
 
     public function getResponse(): CreateTenantResponse

@@ -24,68 +24,23 @@ class TenantConsoleOptionResolverTest extends TestCase
         ]);
     }
 
-    public function testReturnsTenantIdWhenProvided(): void
+    public function testRegistersAndReturnsTenantIdWhenOnlyTenantIdProvided(): void
     {
-        // Arrange
-        $input = new ArrayInput(['--tenant_id' => 't1'], $this->definition());
-
-        // Act
-        $resolved = TenantConsoleOptionResolver::resolveTenantId($input);
-
-        // Assert
-        $this->assertSame('t1', $resolved);
-    }
-
-    public function testRejectsBothOptions(): void
-    {
-        // Arrange
-        $input = new ArrayInput([
-            '--tenant_id' => 't1',
-            '--tenant_shortname' => 'acme',
-        ], $this->definition());
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Provide either --tenant_id or --tenant_shortname, not both.');
-
-        // Act
-        TenantConsoleOptionResolver::resolveTenantId($input);
-
-        // Assert - PHPUnit verifies the exception
-    }
-
-    public function testRejectsNeitherOption(): void
-    {
-        // Arrange
-        $input = new ArrayInput([], $this->definition());
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Provide --tenant_id or --tenant_shortname.');
-
-        // Act
-        TenantConsoleOptionResolver::resolveTenantId($input);
-
-        // Assert - PHPUnit verifies the exception
-    }
-
-    public function testResolvesTenantShortnameUsingDataPath(): void
-    {
-        // Arrange
         $hadKey = array_key_exists('DATA_PATH', $_ENV);
         $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
-        $tmp = sys_get_temp_dir() . '/mt-tcor-' . uniqid('', true);
+        $tmp = sys_get_temp_dir() . '/mt-tcor-id-' . uniqid('', true);
 
         try {
             $_ENV['DATA_PATH'] = $tmp;
             putenv('DATA_PATH=' . $tmp);
 
-            $registry = TenantShortnameRegistry::fromApplicationDataPath($tmp);
-            $registry->register('real-tenant-id', 'acme');
+            $input = new ArrayInput(['--tenant_id' => 't1'], $this->definition());
 
-            $input = new ArrayInput(['--tenant_shortname' => 'acme'], $this->definition());
-
-            // Act
             $resolved = TenantConsoleOptionResolver::resolveTenantId($input);
 
-            // Assert
-            $this->assertSame('real-tenant-id', $resolved);
+            $this->assertSame('t1', $resolved);
+            $registry = TenantShortnameRegistry::fromApplicationDataPath($tmp);
+            $this->assertSame('t1', $registry->resolveTenantId('t1'));
         } finally {
             (new Filesystem())->remove($tmp);
             if ($hadKey && is_string($previous)) {
@@ -98,20 +53,68 @@ class TenantConsoleOptionResolverTest extends TestCase
         }
     }
 
-    public function testThrowsWhenDataPathMissingForShortnameResolution(): void
+    public function testRegistersMappingWhenBothOptionsProvided(): void
     {
-        // Arrange
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+        $tmp = sys_get_temp_dir() . '/mt-tcor-both-' . uniqid('', true);
+
+        try {
+            $_ENV['DATA_PATH'] = $tmp;
+            putenv('DATA_PATH=' . $tmp);
+
+            $input = new ArrayInput([
+                '--tenant_id' => 'real-tenant-id',
+                '--tenant_shortname' => 'acme',
+            ], $this->definition());
+
+            $resolved = TenantConsoleOptionResolver::resolveTenantId($input);
+
+            $this->assertSame('real-tenant-id', $resolved);
+            $registry = TenantShortnameRegistry::fromApplicationDataPath($tmp);
+            $this->assertSame('real-tenant-id', $registry->resolveTenantId('acme'));
+        } finally {
+            (new Filesystem())->remove($tmp);
+            if ($hadKey && is_string($previous)) {
+                $_ENV['DATA_PATH'] = $previous;
+                putenv('DATA_PATH=' . $previous);
+            } else {
+                unset($_ENV['DATA_PATH']);
+                putenv('DATA_PATH');
+            }
+        }
+    }
+
+    public function testRejectsNeitherOption(): void
+    {
+        $input = new ArrayInput([], $this->definition());
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Provide --tenant_id.');
+
+        TenantConsoleOptionResolver::resolveTenantId($input);
+    }
+
+    public function testRejectsShortnameWithoutTenantId(): void
+    {
+        $input = new ArrayInput(['--tenant_shortname' => 'acme'], $this->definition());
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('--tenant_shortname requires --tenant_id.');
+
+        TenantConsoleOptionResolver::resolveTenantId($input);
+    }
+
+    public function testThrowsWhenDataPathMissing(): void
+    {
         $hadKey = array_key_exists('DATA_PATH', $_ENV);
         $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
         unset($_ENV['DATA_PATH']);
         putenv('DATA_PATH');
 
-        $input = new ArrayInput(['--tenant_shortname' => 'any'], $this->definition());
+        $input = new ArrayInput(['--tenant_id' => 't1'], $this->definition());
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage('DATA_PATH must be set to resolve --tenant_shortname.');
+        $this->expectExceptionMessage('DATA_PATH must be set to register tenant shortname mapping');
 
         try {
-            // Act
             TenantConsoleOptionResolver::resolveTenantId($input);
         } finally {
             if ($hadKey && is_string($previous)) {
@@ -122,38 +125,5 @@ class TenantConsoleOptionResolverTest extends TestCase
                 putenv('DATA_PATH');
             }
         }
-
-        // Assert - PHPUnit verifies the exception
-    }
-
-    public function testThrowsWhenShortnameUnknown(): void
-    {
-        // Arrange
-        $hadKey = array_key_exists('DATA_PATH', $_ENV);
-        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
-        $tmp = sys_get_temp_dir() . '/mt-tcor-unknown-' . uniqid('', true);
-
-        try {
-            $_ENV['DATA_PATH'] = $tmp;
-            putenv('DATA_PATH=' . $tmp);
-
-            $input = new ArrayInput(['--tenant_shortname' => 'missing-slug'], $this->definition());
-            $this->expectException(InvalidArgumentException::class);
-            $this->expectExceptionMessage('Unknown tenant_shortname "missing-slug".');
-
-            // Act
-            TenantConsoleOptionResolver::resolveTenantId($input);
-        } finally {
-            (new Filesystem())->remove($tmp);
-            if ($hadKey && is_string($previous)) {
-                $_ENV['DATA_PATH'] = $previous;
-                putenv('DATA_PATH=' . $previous);
-            } else {
-                unset($_ENV['DATA_PATH']);
-                putenv('DATA_PATH');
-            }
-        }
-
-        // Assert - PHPUnit verifies the exception
     }
 }
