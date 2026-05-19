@@ -89,7 +89,7 @@ final class TenantShortnameRegistry
             throw new InvalidArgumentException('tenant_shortname must not be empty.');
         }
 
-        if (!self::isValidShortname($key)) {
+        if (strtolower($tenantId) !== $key && !self::isValidShortname($key)) {
             throw new InvalidArgumentException(
                 'tenant_shortname must be a DNS-like label (lowercase letters, digits, hyphen; 1-63 chars).'
             );

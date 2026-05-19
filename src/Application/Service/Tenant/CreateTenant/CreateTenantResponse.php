@@ -8,8 +8,6 @@ class CreateTenantResponse implements Response
 {
     public function __construct(
         public readonly string $tenantId,
-        public readonly string $tenantName,
-        public readonly string $userEmail,
     ) {
     }
 }

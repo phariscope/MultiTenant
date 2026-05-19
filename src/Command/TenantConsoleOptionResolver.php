@@ -15,31 +15,27 @@ final class TenantConsoleOptionResolver
     {
         $id = $input->getOption('tenant_id');
         $shortname = $input->getOption('tenant_shortname');
-        $idStr = is_string($id) ? trim($id) : '';
-        $snStr = is_string($shortname) ? trim($shortname) : '';
+        $tenantIdString = is_string($id) ? trim($id) : '';
+        $shortnameString = is_string($shortname) ? trim($shortname) : '';
 
-        if ($idStr !== '' && $snStr !== '') {
-            throw new InvalidArgumentException('Provide either --tenant_id or --tenant_shortname, not both.');
+        if ($tenantIdString === '' && $shortnameString === '') {
+            throw new InvalidArgumentException('Provide --tenant_id.');
         }
 
-        if ($idStr === '' && $snStr === '') {
-            throw new InvalidArgumentException('Provide --tenant_id or --tenant_shortname.');
-        }
-
-        if ($idStr !== '') {
-            return $idStr;
+        if ($tenantIdString === '' && $shortnameString !== '') {
+            throw new InvalidArgumentException('--tenant_shortname requires --tenant_id.');
         }
 
         $registry = TenantShortnameRegistry::tryCreateFromEnv();
         if ($registry === null) {
-            throw new RuntimeException('DATA_PATH must be set to resolve --tenant_shortname.');
+            throw new RuntimeException(
+                'DATA_PATH must be set to register tenant shortname mapping in tenants/tenants.sqlite.'
+            );
         }
 
-        $resolved = $registry->resolveTenantId($snStr);
-        if ($resolved === null) {
-            throw new InvalidArgumentException(sprintf('Unknown tenant_shortname "%s".', $snStr));
-        }
+        $shortnameToRegister = $shortnameString !== '' ? $shortnameString : $tenantIdString;
+        $registry->register($tenantIdString, $shortnameToRegister);
 
-        return $resolved;
+        return $tenantIdString;
     }
 }

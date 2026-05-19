@@ -147,18 +147,20 @@ Applications can expose a **human-friendly** hostname or path segment (`tenant_s
 
 **Storage paths** (`DATA_PATH` tenant suffix and SQLite `DATABASE_URL` rewriting) always use the resolved **`tenant_id`**, never the shortname string.
 
-Supported inputs mirror `tenant_id`: query/body parameters, session keys, cookies, JSON body fields, and headers `X-Tenant-Shortname` / `HTTP_X_TENANT_SHORTNAME`. CLI supports `--tenant_shortname` / `--tenant_shortname=value` (same style as `--tenant_id`). If both `tenant_id` and `tenant_shortname` are present, **`tenant_id` wins**.
+Supported inputs mirror `tenant_id`: query/body parameters, session keys, cookies, JSON body fields, and headers `X-Tenant-Shortname` / `HTTP_X_TENANT_SHORTNAME`. HTTP and `ContextTransformer` still resolve a shortname alone via `tenants.sqlite`.
 
-When creating a tenant programmatically, pass optional `tenantShortname` on `CreateTenantRequest` and inject `TenantShortnameRegistry` (or set `DATA_PATH` so the service can open the registry automatically).
+When creating or provisioning a tenant, the registry is updated in `tenants.sqlite`:
+
+- **`CreateTenantService`**: always writes a mapping (`DATA_PATH` required). If `tenantShortname` is omitted, the shortname stored equals `tenant_id`.
+- **Bundle console commands** (`tenant:database:create`, `tenant:schema:create`, `tenant:schema:update`): `--tenant_id` is **required**. Optional `--tenant_shortname` registers a custom slug; if omitted, the shortname stored equals `tenant_id`. `--tenant_shortname` alone is rejected.
 
 Console examples:
 
 ```bash
-bin/console tenant:database:create --tenant_shortname my-school
-bin/console tenant:schema:create --tenant_shortname my-school
+bin/console tenant:database:create --tenant_id tenantID1234
+bin/console tenant:database:create --tenant_id tenantID1234 --tenant_shortname my-school
+bin/console tenant:schema:create --tenant_id tenantID1234 --tenant_shortname my-school
 ```
-
-For bundle commands (`tenant:database:create`, `tenant:schema:create`, `tenant:schema:update`), pass **exactly one** of `--tenant_id` or `--tenant_shortname`. If you pass both, the command fails with: `Provide either --tenant_id or --tenant_shortname, not both.`
 
 # How it works
 
