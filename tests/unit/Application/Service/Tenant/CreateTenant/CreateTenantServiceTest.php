@@ -27,19 +27,13 @@ class CreateTenantServiceTest extends TestCase
         $this->tmpBase = sys_get_temp_dir() . '/mt-cts-' . uniqid('', true);
         $registry = TenantShortnameRegistry::fromApplicationDataPath($this->tmpBase);
 
-        $request = new CreateTenantRequest(
-            tenantId: 'am_cl_1234567890',
-            tenantName: 'Campus26',
-            userEmail: 'user@campus26.com',
-        );
+        $request = new CreateTenantRequest(tenantId: 'am_cl_1234567890');
         $sut = new CreateTenantService(new TenantRepositoryInMemory(), $registry);
 
         $sut->execute($request);
         $response = $sut->getResponse();
 
         $this->assertEquals('am_cl_1234567890', $response->tenantId);
-        $this->assertEquals('Campus26', $response->tenantName);
-        $this->assertEquals('user@campus26.com', $response->userEmail);
         $this->assertSame('am_cl_1234567890', $registry->resolveTenantId('am_cl_1234567890'));
     }
 
@@ -50,8 +44,6 @@ class CreateTenantServiceTest extends TestCase
 
         $request = new CreateTenantRequest(
             tenantId: 'am_cl_1234567890',
-            tenantName: 'Campus26',
-            userEmail: 'user@campus26.com',
             tenantShortname: 'campus-26',
         );
         $sut = new CreateTenantService(new TenantRepositoryInMemory(), $registry);
@@ -66,11 +58,7 @@ class CreateTenantServiceTest extends TestCase
         $this->tmpBase = sys_get_temp_dir() . '/mt-cts-' . uniqid('', true);
         $registry = TenantShortnameRegistry::fromApplicationDataPath($this->tmpBase);
 
-        $request = new CreateTenantRequest(
-            tenantId: 'am_cl_fixed',
-            tenantName: 'N',
-            userEmail: 'e@e.com',
-        );
+        $request = new CreateTenantRequest(tenantId: 'am_cl_fixed');
         $repo = new TenantRepositoryInMemory();
         $sut = new CreateTenantService($repo, $registry);
 
@@ -89,11 +77,7 @@ class CreateTenantServiceTest extends TestCase
         unset($_ENV['DATA_PATH']);
         putenv('DATA_PATH');
 
-        $request = new CreateTenantRequest(
-            tenantId: 'am_cl_x',
-            tenantName: 'N',
-            userEmail: 'e@e.com',
-        );
+        $request = new CreateTenantRequest(tenantId: 'am_cl_x');
         $sut = new CreateTenantService(new TenantRepositoryInMemory(), null);
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('DATA_PATH is not set; cannot write tenant shortname mapping');

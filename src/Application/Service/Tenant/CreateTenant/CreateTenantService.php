@@ -20,11 +20,7 @@ class CreateTenantService
     public function execute(CreateTenantRequest $request): void
     {
 
-        $tenant = new Tenant(
-            tenantId: new TenantId($request->tenantId),
-            name: $request->tenantName,
-            userEmail: $request->userEmail,
-        );
+        $tenant = new Tenant(tenantId: new TenantId($request->tenantId));
         $this->tenantRepository->create($tenant);
 
         $registry = $this->shortnameRegistry ?? TenantShortnameRegistry::tryCreateFromEnv();
@@ -39,11 +35,7 @@ class CreateTenantService
             : $tenant->getTenantId();
         $registry->register($tenant->getTenantId(), $shortname);
 
-        $this->response = new CreateTenantResponse(
-            tenantId: $tenant->getTenantId(),
-            tenantName: $tenant->getName(),
-            userEmail: $tenant->getUserEmail(),
-        );
+        $this->response = new CreateTenantResponse(tenantId: $tenant->getTenantId());
     }
 
     public function getResponse(): CreateTenantResponse

@@ -15,14 +15,14 @@ final class TenantConsoleOptionResolver
     {
         $id = $input->getOption('tenant_id');
         $shortname = $input->getOption('tenant_shortname');
-        $idStr = is_string($id) ? trim($id) : '';
-        $snStr = is_string($shortname) ? trim($shortname) : '';
+        $tenantIdString = is_string($id) ? trim($id) : '';
+        $shortnameString = is_string($shortname) ? trim($shortname) : '';
 
-        if ($idStr === '' && $snStr === '') {
+        if ($tenantIdString === '' && $shortnameString === '') {
             throw new InvalidArgumentException('Provide --tenant_id.');
         }
 
-        if ($idStr === '' && $snStr !== '') {
+        if ($tenantIdString === '' && $shortnameString !== '') {
             throw new InvalidArgumentException('--tenant_shortname requires --tenant_id.');
         }
 
@@ -33,9 +33,9 @@ final class TenantConsoleOptionResolver
             );
         }
 
-        $shortnameToRegister = $snStr !== '' ? $snStr : $idStr;
-        $registry->register($idStr, $shortnameToRegister);
+        $shortnameToRegister = $shortnameString !== '' ? $shortnameString : $tenantIdString;
+        $registry->register($tenantIdString, $shortnameToRegister);
 
-        return $idStr;
+        return $tenantIdString;
     }
 }
