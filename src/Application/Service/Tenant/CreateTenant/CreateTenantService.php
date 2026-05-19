@@ -27,15 +27,17 @@ class CreateTenantService
         );
         $this->tenantRepository->create($tenant);
 
-        if ($request->tenantShortname !== null && $request->tenantShortname !== '') {
-            $registry = $this->shortnameRegistry ?? TenantShortnameRegistry::tryCreateFromEnv();
-            if ($registry === null) {
-                throw new \RuntimeException(
-                    'tenant_shortname was provided but DATA_PATH is not set; cannot write tenants/tenants.sqlite.'
-                );
-            }
-            $registry->register($tenant->getTenantId(), $request->tenantShortname);
+        $registry = $this->shortnameRegistry ?? TenantShortnameRegistry::tryCreateFromEnv();
+        if ($registry === null) {
+            throw new \RuntimeException(
+                'DATA_PATH is not set; cannot write tenant shortname mapping to tenants/tenants.sqlite.'
+            );
         }
+
+        $shortname = $request->tenantShortname !== null && $request->tenantShortname !== ''
+            ? $request->tenantShortname
+            : $tenant->getTenantId();
+        $registry->register($tenant->getTenantId(), $shortname);
 
         $this->response = new CreateTenantResponse(
             tenantId: $tenant->getTenantId(),

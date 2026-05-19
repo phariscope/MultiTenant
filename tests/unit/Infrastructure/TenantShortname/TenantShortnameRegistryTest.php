@@ -89,6 +89,16 @@ class TenantShortnameRegistryTest extends TestCase
         // Assert - PHPUnit verifies the exception
     }
 
+    public function testRegisterAllowsTenantIdAsShortnameWhenEqual(): void
+    {
+        $this->tmpBase = sys_get_temp_dir() . '/mt-reg-id-slug-' . uniqid('', true);
+        $registry = TenantShortnameRegistry::fromApplicationDataPath($this->tmpBase);
+
+        $registry->register('am_cl_fixed', 'am_cl_fixed');
+
+        $this->assertSame('am_cl_fixed', $registry->resolveTenantId('am_cl_fixed'));
+    }
+
     public function testTryCreateFromEnvUsesGetenvWhenNotInSuperglobal(): void
     {
         // Arrange
