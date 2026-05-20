@@ -129,13 +129,9 @@ final class TenantShortnameRegistry
         ]);
         $this->pdo->exec(
             'CREATE TABLE IF NOT EXISTS tenant_shortname_map (
-                tenant_shortname TEXT NOT NULL PRIMARY KEY,
-                tenant_id TEXT NOT NULL
+                tenant_shortname TEXT NOT NULL UNIQUE,
+                tenant_id TEXT NOT NULL PRIMARY KEY
             )'
-        );
-        $this->pdo->exec(
-            'CREATE UNIQUE INDEX IF NOT EXISTS idx_tenant_shortname_map_tenant_id '
-            . 'ON tenant_shortname_map (tenant_id)'
         );
 
         return $this->pdo;
