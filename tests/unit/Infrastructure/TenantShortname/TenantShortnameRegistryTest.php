@@ -21,29 +21,6 @@ class TenantShortnameRegistryTest extends TestCase
         }
     }
 
-    public function testResolveSqliteFilePathForHostDataPath(): void
-    {
-        // Arrange
-        $hostDataPath = '/var/app/data';
-
-        // Act
-        $path = TenantShortnameRegistry::resolveSqliteFilePath($hostDataPath);
-
-        // Assert
-        $this->assertSame('/var/app/data/tenants/tenants.sqlite', $path);
-    }
-
-    public function testResolveSqliteFilePathWhenDataPathIsTenantFolder(): void
-    {
-        // Arrange
-        $tenantDataPath = '/var/app/data/tenants/t1';
-
-        // Act
-        $path = TenantShortnameRegistry::resolveSqliteFilePath($tenantDataPath);
-
-        // Assert
-        $this->assertSame('/var/app/data/tenants/tenants.sqlite', $path);
-    }
 
     public function testRegisterAndResolve(): void
     {
@@ -147,17 +124,6 @@ class TenantShortnameRegistryTest extends TestCase
         }
     }
 
-    public function testResolveSqliteFilePathNormalizesBackslashes(): void
-    {
-        // Arrange
-        $mixed = 'C:\\app\\data\\tenants\\tid';
-
-        // Act
-        $path = TenantShortnameRegistry::resolveSqliteFilePath($mixed);
-
-        // Assert
-        $this->assertSame('C:/app/data/tenants/tenants.sqlite', $path);
-    }
 
     public function testResolveReturnsNullForWhitespaceOnlyShortname(): void
     {

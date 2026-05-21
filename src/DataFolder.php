@@ -38,4 +38,9 @@ class DataFolder implements DataFolderPathInterface
 
         throw new \InvalidArgumentException("DATABASE_URL '$databaseUrl' is not a valid SQLite URL");
     }
+
+    public function getDatabaseTenantsFullPath(): string
+    {
+        return sprintf("%s/%s", $this->getDataRootFolder(), "tenants/tenants.sqlite");
+    }
 }

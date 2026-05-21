@@ -135,4 +135,32 @@ class DataFolderTest extends TestCase
 
         // Assert - PHPUnit verifies the exception
     }
+
+    public function testGetDatabaseTenantsFullPath(): void
+    {
+        // Arrange
+        $_ENV['DATA_PATH'] = '/var/app/data';
+        $dataFolder = new DataFolder();
+        $expectedPath = '/var/app/data/tenants/tenants.sqlite';
+
+        // Act
+        $actualPath = $dataFolder->getDatabaseTenantsFullPath();
+
+        // Assert
+        $this->assertEquals($expectedPath, $actualPath);
+    }
+
+    public function testGetDatabaseTenantsFullPathWithRelativePath(): void
+    {
+        // Arrange
+        $_ENV['DATA_PATH'] = './var/data';
+        $dataFolder = new DataFolder();
+        $expectedPath = './var/data/tenants/tenants.sqlite';
+
+        // Act
+        $actualPath = $dataFolder->getDatabaseTenantsFullPath();
+
+        // Assert
+        $this->assertEquals($expectedPath, $actualPath);
+    }
 }
