@@ -7,10 +7,11 @@ namespace Phariscope\MultiTenant\Infrastructure\TenantShortname;
 use InvalidArgumentException;
 use PDO;
 use PDOException;
+use Phariscope\MultiTenant\DataFolder;
 
 /**
- * SQLite registry at {DATA_PATH}/tenants/tenants.sqlite when DATA_PATH is the host root,
- * or {parent}/tenants.sqlite when DATA_PATH already points to .../tenants/{tenant_id}.
+ * SQLite registry at {DATA_PATH}/tenants/tenants.sqlite where DATA_PATH is the application root.
+ * Path calculation is delegated to DataFolder for consistency.
  */
 final class TenantShortnameRegistry
 {
@@ -33,21 +34,23 @@ final class TenantShortnameRegistry
 
     public static function fromApplicationDataPath(string $dataPath): self
     {
-        return new self(self::resolveSqliteFilePath($dataPath));
-    }
+        // Temporairement, on set DATA_PATH pour que DataFolder fonctionne
+        $originalDataPath = $_ENV['DATA_PATH'] ?? null;
+        $_ENV['DATA_PATH'] = $dataPath;
 
-    public static function resolveSqliteFilePath(string $dataPath): string
-    {
-        $normalized = rtrim(str_replace('\\', '/', $dataPath), '/');
-        if ($normalized === '') {
-            throw new InvalidArgumentException('DATA_PATH must not be empty.');
+        try {
+            $dataFolder = new DataFolder();
+            $sqliteFilePath = $dataFolder->getDatabaseTenantsFullPath();
+
+            return new self($sqliteFilePath);
+        } finally {
+            // Restaurer la valeur originale
+            if ($originalDataPath !== null) {
+                $_ENV['DATA_PATH'] = $originalDataPath;
+            } else {
+                unset($_ENV['DATA_PATH']);
+            }
         }
-
-        if (preg_match('#/tenants/[^/]+$#', $normalized) === 1) {
-            return dirname($normalized) . '/tenants.sqlite';
-        }
-
-        return $normalized . '/tenants/tenants.sqlite';
     }
 
     public function getSqliteFilePath(): string
