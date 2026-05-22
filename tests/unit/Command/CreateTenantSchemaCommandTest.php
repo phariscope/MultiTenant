@@ -5,40 +5,32 @@ namespace Phariscope\MultiTenant\Tests\Commmand;
 use Doctrine\ORM\EntityManager;
 use Phariscope\MultiTenant\Command\CreateTenantDatabaseCommand;
 use Phariscope\MultiTenant\Command\CreateTenantSchemaCommand;
-use Phariscope\MultiTenant\Doctrine\DatabaseTools;
-use Phariscope\MultiTenant\Doctrine\EntityManagerResolver;
 use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeEntityManagerFactory;
+use Phariscope\MultiTenant\Tests\Share\IsolatesDataPathEnvTrait;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Tester\CommandTester;
 
 class CreateTenantSchemaCommandTest extends TestCase
 {
+    use IsolatesDataPathEnvTrait;
+
     private CommandTester $commandTester;
 
     private EntityManager $em;
-
-    private string $initialDataPath;
 
     protected function setUp(): void
     {
         (new FakeEntityManagerFactory())->cleanSqliteDatabase();
         $this->em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
         $this->commandTester = $this->createCommandTester();
-
-        if (isset($_ENV['DATA_PATH'])) {
-            $this->initialDataPath = $_ENV['DATA_PATH'];
-            unset($_ENV['DATA_PATH']);
-        }
+        $this->setUpIsolatedWritableDataPath();
     }
 
     protected function tearDown(): void
     {
-        if (isset($this->initialDataPath)) {
-            $_ENV['DATA_PATH'] = $this->initialDataPath;
-        } else {
-            unset($_ENV['DATA_PATH']);
-        }
+        $this->tearDownIsolatedDataPath();
+        (new FakeEntityManagerFactory())->cleanSqliteDatabase();
     }
 
     private function createCommandTester(): CommandTester
@@ -121,5 +113,21 @@ class CreateTenantSchemaCommandTest extends TestCase
             'Could not create schema for tenant "' . $expectedTenantId,
             $output
         );
+    }
+
+    public function testExecuteFailureWhenTenantIdMissing(): void
+    {
+        // Arrange
+        $saved = $this->captureDataPathEnv();
+        $this->clearDataPathEnv();
+
+        // Act
+        $exitCode = $this->commandTester->execute([]);
+
+        // Assert
+        $this->assertSame(1, $exitCode);
+        $this->assertStringContainsString('Provide --tenant_id', $this->commandTester->getDisplay());
+
+        $this->restoreDataPathEnv($saved);
     }
 }

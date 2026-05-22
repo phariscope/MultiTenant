@@ -17,10 +17,20 @@ class FakeEntityManagerFactory
 
     public const MARIADB_DATABASE_NAME = 'mydbname';
 
+    public static function projectRoot(): string
+    {
+        return dirname(__DIR__, 4);
+    }
+
+    public static function sqliteDatabaseAbsolutePath(): string
+    {
+        return self::projectRoot() . self::SQLITE_DATABASE_PATH;
+    }
+
     public function cleanSqliteDatabase(): void
     {
         $fs = new Filesystem();
-        $fs->remove(getcwd() . self::DATA_PATH);
+        $fs->remove(self::projectRoot() . self::DATA_PATH);
     }
 
     public function createSqliteEntityManager(): EntityManager
@@ -28,7 +38,7 @@ class FakeEntityManagerFactory
         $connection = DriverManager::getConnection(
             [
                 'driver' => 'pdo_sqlite',
-                'path' => getcwd() . self::SQLITE_DATABASE_PATH,
+                'path' => self::sqliteDatabaseAbsolutePath(),
             ]
         );
         return $this->createEntityManager($connection);
