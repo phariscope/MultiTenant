@@ -6,6 +6,7 @@ use Doctrine\ORM\EntityManager;
 use Phariscope\MultiTenant\Command\CreateTenantDatabaseCommand;
 use Phariscope\MultiTenant\Doctrine\Tools\ParamsConnection;
 use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeEntityManagerFactory;
+use Phariscope\MultiTenant\Tests\Share\IsolatesDataPathEnvTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Console\Application;
@@ -15,21 +16,23 @@ use function SafePHP\strval;
 
 class CreateTenantDatabaseCommandTest extends TestCase
 {
+    use IsolatesDataPathEnvTrait;
+
     private CommandTester $commandTester;
 
     private EntityManager $em;
 
     protected function setUp(): void
     {
-
         (new FakeEntityManagerFactory())->cleanSqliteDatabase();
         $this->em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
-
         $this->commandTester = $this->createCommandTester();
+        $this->setUpIsolatedWritableDataPath();
     }
 
     protected function tearDown(): void
     {
+        $this->tearDownIsolatedDataPath();
         (new FakeEntityManagerFactory())->cleanSqliteDatabase();
     }
 
@@ -88,5 +91,21 @@ class CreateTenantDatabaseCommandTest extends TestCase
 
         // clean up
         $filesystem->remove($tenantDbPath);
+    }
+
+    public function testExecuteFailureWhenTenantIdMissing(): void
+    {
+        // Arrange
+        $saved = $this->captureDataPathEnv();
+        $this->clearDataPathEnv();
+
+        // Act
+        $exitCode = $this->commandTester->execute([]);
+
+        // Assert
+        $this->assertSame(1, $exitCode);
+        $this->assertStringContainsString('Provide --tenant_id', $this->commandTester->getDisplay());
+
+        $this->restoreDataPathEnv($saved);
     }
 }

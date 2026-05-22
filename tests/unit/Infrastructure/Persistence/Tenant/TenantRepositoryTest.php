@@ -34,10 +34,10 @@ class TenantRepositoryTest extends TestCase
         $tenantRepository->create($tenant);
 
         // Assert
-        $this->assertFileExists(getcwd() . FakeEntityManagerFactory::SQLITE_DATABASE_PATH);
+        $this->assertFileExists(FakeEntityManagerFactory::sqliteDatabaseAbsolutePath());
 
         // Clean up tenant folder
         $fs = new Filesystem();
-        $fs->remove(getcwd() . FakeEntityManagerFactory::DATA_PATH);
+        $fs->remove(FakeEntityManagerFactory::projectRoot() . FakeEntityManagerFactory::DATA_PATH);
     }
 }

@@ -2,6 +2,13 @@
 
 namespace Phariscope\MultiTenant\Tests\Doctrine;
 
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Driver\PDO\Exception as PdoDriverException;
+use Doctrine\DBAL\Exception\ConnectionException;
+use Doctrine\DBAL\Platforms\MySQLPlatform;
+use Doctrine\DBAL\Schema\AbstractSchemaManager;
+use Doctrine\ORM\EntityManagerInterface;
+use Mockery;
 use Phariscope\MultiTenant\Doctrine\DatabaseTools;
 use Phariscope\MultiTenant\Doctrine\Tools\ParamsConnection;
 use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeEntityManagerFactory;
@@ -15,6 +22,12 @@ class DatabaseToolsTest extends TestCase
     {
         parent::setUp();
         (new FakeEntityManagerFactory())->cleanSqliteDatabase();
+    }
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
     }
 
     public function testCreateSqliteDatabase(): void
@@ -125,5 +138,107 @@ class DatabaseToolsTest extends TestCase
         $joined = implode(' ', $sqls);
         $this->assertStringContainsString('entities', $joined);
         $this->assertStringContainsStringIgnoringCase('CREATE', $joined);
+    }
+
+    public function testCreateSqliteDatabaseThrowsWhenFileAlreadyExists(): void
+    {
+        // Arrange
+        $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
+        $sut = new DatabaseTools();
+        $sut->createDatabase($em);
+
+        // Act & Assert
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('already exists');
+        $sut->createDatabase($em);
+    }
+
+    public function testDatabaseExistsReturnsFalseWhenConnectionFails(): void
+    {
+        // Arrange
+        $driverException = PdoDriverException::new(new \PDOException('Connection refused'));
+
+        $schemaManager = $this->createMock(AbstractSchemaManager::class);
+        $schemaManager->method('listDatabases')
+            ->willThrowException(new ConnectionException($driverException, null));
+
+        $connection = $this->createMock(Connection::class);
+        $connection->method('getDatabasePlatform')->willReturn(new MySQLPlatform());
+        $connection->method('getParams')->willReturn(['dbname' => 'test']);
+        $connection->method('createSchemaManager')->willReturn($schemaManager);
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->method('getConnection')->willReturn($connection);
+        $sut = new DatabaseTools();
+
+        // Act
+        $exists = $sut->databaseExists($em);
+
+        // Assert
+        $this->assertFalse($exists);
+    }
+
+    public function testDatabaseExistsReturnsTrueForNonSqliteWhenConnectionWorks(): void
+    {
+        // Arrange
+        $schemaManager = $this->createMock(AbstractSchemaManager::class);
+        $schemaManager->method('listDatabases')->willReturn(['mydbname']);
+
+        $connection = $this->createMock(Connection::class);
+        $connection->method('getDatabasePlatform')->willReturn(new MySQLPlatform());
+        $connection->method('getParams')->willReturn(['dbname' => 'mydbname']);
+        $connection->method('createSchemaManager')->willReturn($schemaManager);
+
+        $em = $this->createMock(EntityManagerInterface::class);
+        $em->method('getConnection')->willReturn($connection);
+        $sut = new DatabaseTools();
+
+        // Act
+        $exists = $sut->databaseExists($em);
+
+        // Assert
+        $this->assertTrue($exists);
+    }
+
+    public function testCreateMysqlDatabase(): void
+    {
+        // Arrange
+        $this->skipIfMariaDbUnavailable();
+        (new FakeEntityManagerFactory())->cleanMariadbDatabase();
+        $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
+        $sut = new DatabaseTools();
+
+        // Act
+        $sut->createDatabase($em);
+        $params = $em->getConnection()->getParams();
+
+        // Assert
+        $this->assertSame(FakeEntityManagerFactory::MARIADB_DATABASE_NAME, $params['dbname'] ?? null);
+        $this->assertTrue($sut->databaseExists($em));
+    }
+
+    public function testMysqlDatabaseDrop(): void
+    {
+        // Arrange
+        $this->skipIfMariaDbUnavailable();
+        (new FakeEntityManagerFactory())->cleanMariadbDatabase();
+        $em = (new FakeEntityManagerFactory())->createMariadbEntityManager();
+        $sut = new DatabaseTools();
+        $sut->createDatabase($em);
+
+        // Act
+        $sut->dropDatabase($em);
+
+        // Assert
+        $this->assertFalse($sut->databaseExists($em));
+    }
+
+    private function skipIfMariaDbUnavailable(): void
+    {
+        try {
+            (new FakeEntityManagerFactory())->cleanMariadbDatabase();
+        } catch (\Throwable) {
+            $this->markTestSkipped('MariaDB is not available for non-SQLite DatabaseTools coverage.');
+        }
     }
 }

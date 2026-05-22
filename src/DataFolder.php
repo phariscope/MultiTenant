@@ -11,7 +11,7 @@ class DataFolder implements DataFolderPathInterface
 
     public function getDataRootFolder(): string
     {
-        return $_ENV["DATA_PATH"];
+        return $_ENV[self::DATA_PATH_NAME];
     }
 
     public function getTenantDataFolder(?string $tenantId = null): string

@@ -4,26 +4,35 @@ declare(strict_types=1);
 
 namespace Phariscope\MultiTenant\Tests\Command;
 
+use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\ORMSetup;
+use Mockery;
 use Phariscope\MultiTenant\Command\CreateTenantDatabaseCommand;
 use Phariscope\MultiTenant\Command\UpdateTenantSchemaCommand;
 use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeEntityManagerFactory;
+use Phariscope\MultiTenant\Tests\Share\IsolatesDataPathEnvTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
 
 class UpdateTenantSchemaCommandTest extends TestCase
 {
+    use IsolatesDataPathEnvTrait;
+
     private EntityManager $em;
 
     protected function setUp(): void
     {
         (new FakeEntityManagerFactory())->cleanSqliteDatabase();
         $this->em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
+        $this->setUpIsolatedWritableDataPath();
     }
 
     protected function tearDown(): void
     {
+        Mockery::close();
+        $this->tearDownIsolatedDataPath();
         (new FakeEntityManagerFactory())->cleanSqliteDatabase();
     }
 
@@ -150,6 +159,48 @@ class UpdateTenantSchemaCommandTest extends TestCase
         $this->assertStringContainsString('CREATE TABLE', $output);
         $this->assertStringContainsString(
             'Schema for tenant "' . $tenantId . '" updated successfully.',
+            $output
+        );
+    }
+
+    public function testExecuteFailureWhenTenantIdMissing(): void
+    {
+        // Arrange
+        $saved = $this->captureDataPathEnv();
+        $this->clearDataPathEnv();
+        $commandTester = $this->createUpdateCommandTester();
+
+        // Act
+        $exitCode = $commandTester->execute([]);
+
+        // Assert
+        $this->assertSame(1, $exitCode);
+        $this->assertStringContainsString('Provide --tenant_id', $commandTester->getDisplay());
+
+        $this->restoreDataPathEnv($saved);
+    }
+
+    public function testReportsSchemaUpToDateWhenNoPendingChanges(): void
+    {
+        // Arrange
+        $tenantId = 'tenant123';
+        $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
+        $config = ORMSetup::createXMLMetadataConfiguration([], true);
+        $em = new EntityManager($connection, $config);
+        $application = new Application();
+        $application->add(new UpdateTenantSchemaCommand($em));
+        $commandTester = new CommandTester($application->find('tenant:schema:update'));
+
+        // Act
+        $exitCode = $commandTester->execute([
+            '--tenant_id' => $tenantId,
+        ]);
+
+        // Assert
+        $output = $commandTester->getDisplay();
+        $this->assertSame(0, $exitCode, $output);
+        $this->assertStringContainsString(
+            'Schema for tenant "' . $tenantId . '" is up to date.',
             $output
         );
     }

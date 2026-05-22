@@ -387,4 +387,230 @@ class TenantManagerTest extends TestCase
             }
         }
     }
+
+    public function testResolvesTenantShortnameFromRequestSuperglobal(): void
+    {
+        // Arrange
+        $tmp = sys_get_temp_dir() . '/mt-tm-req-' . uniqid('', true);
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+
+        try {
+            $_ENV['DATA_PATH'] = $tmp;
+            putenv('DATA_PATH=' . $tmp);
+            TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-req', 'slug-req');
+            $_REQUEST['tenant_shortname'] = 'slug-req';
+            $sut = new TenantManager();
+
+            // Act
+            $tenantId = $sut->getCurrentTenantId();
+
+            // Assert
+            $this->assertSame('tid-req', $tenantId);
+        } finally {
+            unset($_REQUEST['tenant_shortname']);
+            (new Filesystem())->remove($tmp);
+            $this->restoreDataPath($hadKey, $previous);
+        }
+    }
+
+    public function testResolvesTenantShortnameFromGet(): void
+    {
+        // Arrange
+        $tmp = sys_get_temp_dir() . '/mt-tm-get-sn-' . uniqid('', true);
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+
+        try {
+            $_ENV['DATA_PATH'] = $tmp;
+            putenv('DATA_PATH=' . $tmp);
+            TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-get-sn', 'slug-get');
+            $_GET['tenant_shortname'] = 'slug-get';
+            $sut = new TenantManager();
+
+            // Act
+            $tenantId = $sut->getCurrentTenantId();
+
+            // Assert
+            $this->assertSame('tid-get-sn', $tenantId);
+        } finally {
+            unset($_GET['tenant_shortname']);
+            (new Filesystem())->remove($tmp);
+            $this->restoreDataPath($hadKey, $previous);
+        }
+    }
+
+    public function testResolvesTenantShortnameFromPost(): void
+    {
+        // Arrange
+        $tmp = sys_get_temp_dir() . '/mt-tm-post-sn-' . uniqid('', true);
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+
+        try {
+            $_ENV['DATA_PATH'] = $tmp;
+            putenv('DATA_PATH=' . $tmp);
+            TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-post-sn', 'slug-post');
+            $_POST['tenant_shortname'] = 'slug-post';
+            $sut = new TenantManager();
+
+            // Act
+            $tenantId = $sut->getCurrentTenantId();
+
+            // Assert
+            $this->assertSame('tid-post-sn', $tenantId);
+        } finally {
+            unset($_POST['tenant_shortname']);
+            (new Filesystem())->remove($tmp);
+            $this->restoreDataPath($hadKey, $previous);
+        }
+    }
+
+    public function testResolvesTenantShortnameFromSession(): void
+    {
+        // Arrange
+        $tmp = sys_get_temp_dir() . '/mt-tm-sess-sn-' . uniqid('', true);
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+
+        try {
+            $_ENV['DATA_PATH'] = $tmp;
+            putenv('DATA_PATH=' . $tmp);
+            TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-sess-sn', 'slug-sess');
+            $session = ['tenant_shortname' => 'slug-sess'];
+            $sut = new TenantManager(null, $session);
+
+            // Act
+            $tenantId = $sut->getCurrentTenantId();
+
+            // Assert
+            $this->assertSame('tid-sess-sn', $tenantId);
+        } finally {
+            (new Filesystem())->remove($tmp);
+            $this->restoreDataPath($hadKey, $previous);
+        }
+    }
+
+    public function testResolvesTenantShortnameFromCookie(): void
+    {
+        // Arrange
+        $tmp = sys_get_temp_dir() . '/mt-tm-cookie-sn-' . uniqid('', true);
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+
+        try {
+            $_ENV['DATA_PATH'] = $tmp;
+            putenv('DATA_PATH=' . $tmp);
+            TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-cookie-sn', 'slug-cookie');
+            $_COOKIE['tenant_shortname'] = 'slug-cookie';
+            $sut = new TenantManager();
+
+            // Act
+            $tenantId = $sut->getCurrentTenantId();
+
+            // Assert
+            $this->assertSame('tid-cookie-sn', $tenantId);
+        } finally {
+            unset($_COOKIE['tenant_shortname']);
+            (new Filesystem())->remove($tmp);
+            $this->restoreDataPath($hadKey, $previous);
+        }
+    }
+
+    public function testReturnsNullWhenShortnameCannotBeResolvedWithoutRegistry(): void
+    {
+        // Arrange
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+        unset($_ENV['DATA_PATH']);
+        putenv('DATA_PATH');
+        $_SERVER['HTTP_X_TENANT_SHORTNAME'] = 'unknown-slug';
+        $sut = new TenantManager();
+
+        // Act
+        $tenantId = $sut->getCurrentTenantId();
+
+        // Assert
+        $this->assertNull($tenantId);
+
+        unset($_SERVER['HTTP_X_TENANT_SHORTNAME']);
+        $this->restoreDataPath($hadKey, $previous);
+    }
+
+    public function testResolvesShortnameFromSymfonyPost(): void
+    {
+        // Arrange
+        $tmp = sys_get_temp_dir() . '/mt-tm-sf-post-' . uniqid('', true);
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+
+        try {
+            $_ENV['DATA_PATH'] = $tmp;
+            putenv('DATA_PATH=' . $tmp);
+            TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-sf-post', 'slug-sf-post');
+            $request = new Request([], ['tenant_shortname' => 'slug-sf-post']);
+            $sut = new TenantManager($request);
+
+            // Act
+            $tenantId = $sut->getCurrentTenantId();
+
+            // Assert
+            $this->assertSame('tid-sf-post', $tenantId);
+        } finally {
+            (new Filesystem())->remove($tmp);
+            $this->restoreDataPath($hadKey, $previous);
+        }
+    }
+
+    public function testResolvesShortnameFromSymfonyCookie(): void
+    {
+        // Arrange
+        $tmp = sys_get_temp_dir() . '/mt-tm-sf-cookie-' . uniqid('', true);
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+
+        try {
+            $_ENV['DATA_PATH'] = $tmp;
+            putenv('DATA_PATH=' . $tmp);
+            TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-sf-cookie', 'slug-sf-cookie');
+            $request = new Request([], [], [], ['tenant_shortname' => 'slug-sf-cookie']);
+            $sut = new TenantManager($request);
+
+            // Act
+            $tenantId = $sut->getCurrentTenantId();
+
+            // Assert
+            $this->assertSame('tid-sf-cookie', $tenantId);
+        } finally {
+            (new Filesystem())->remove($tmp);
+            $this->restoreDataPath($hadKey, $previous);
+        }
+    }
+
+    public function testEmptySymfonyShortnameHeaderReturnsNull(): void
+    {
+        // Arrange
+        $request = new Request([], [], [], [], [], ['HTTP_X_TENANT_SHORTNAME' => '']);
+        $sut = new TenantManager($request);
+
+        // Act
+        $tenantId = $sut->getCurrentTenantId();
+
+        // Assert
+        $this->assertNull($tenantId);
+    }
+
+    /**
+     * @param mixed $previous
+     */
+    private function restoreDataPath(bool $hadKey, mixed $previous): void
+    {
+        if ($hadKey && is_string($previous)) {
+            $_ENV['DATA_PATH'] = $previous;
+            putenv('DATA_PATH=' . $previous);
+        } else {
+            unset($_ENV['DATA_PATH']);
+            putenv('DATA_PATH');
+        }
+    }
 }

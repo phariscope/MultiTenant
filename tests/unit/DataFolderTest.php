@@ -3,10 +3,23 @@
 namespace Phariscope\MultiTenant\Tests;
 
 use Phariscope\MultiTenant\DataFolder;
+use Phariscope\MultiTenant\Tests\Share\IsolatesDataPathEnvTrait;
 use PHPUnit\Framework\TestCase;
 
 class DataFolderTest extends TestCase
 {
+    use IsolatesDataPathEnvTrait;
+
+    protected function setUp(): void
+    {
+        $this->setUpDataPathEnvSnapshot();
+    }
+
+    protected function tearDown(): void
+    {
+        $this->tearDownDataPathEnvSnapshot();
+    }
+
     public function testGetDataRootFolder(): void
     {
         // Arrange
