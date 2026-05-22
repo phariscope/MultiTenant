@@ -306,6 +306,49 @@ class ContextTransformerTest extends TestCase
         );
     }
 
+    public function testTryCreateFromEnvAfterTransformDataPathUsesGlobalShortnameRegistry(): void
+    {
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+        $appRoot = sys_get_temp_dir() . '/mt-ctx-global-' . uniqid('', true);
+
+        try {
+            $context = [
+                'DATA_PATH' => $appRoot,
+                'argv' => [
+                    'bin/console',
+                    'tenant:database:create',
+                    '--tenant_id',
+                    'campus26',
+                    '--tenant_shortname',
+                    'c26',
+                ],
+            ];
+
+            $transformer = new ContextTransformer($context);
+            $transformer->transformDataPath();
+
+            $this->assertEnvValue('DATA_PATH', $appRoot . '/tenants/campus26');
+
+            $registry = TenantShortnameRegistry::tryCreateFromEnv();
+            $this->assertNotNull($registry);
+            $registry->register('campus26', 'c26');
+
+            $globalRegistry = TenantShortnameRegistry::fromApplicationDataPath($appRoot);
+            $this->assertSame('campus26', $globalRegistry->resolveTenantId('c26'));
+            $this->assertFileDoesNotExist($appRoot . '/tenants/campus26/tenants/tenants.sqlite');
+        } finally {
+            (new Filesystem())->remove($appRoot);
+            if ($hadKey && is_string($previous)) {
+                $_ENV['DATA_PATH'] = $previous;
+                putenv('DATA_PATH=' . $previous);
+            } else {
+                unset($_ENV['DATA_PATH']);
+                putenv('DATA_PATH');
+            }
+        }
+    }
+
     public function testTransformDataPathWithTenantShortnameInArgv(): void
     {
         // Arrange

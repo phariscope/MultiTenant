@@ -261,6 +261,24 @@ class TenantShortnameRegistryTest extends TestCase
         );
     }
 
+    public function testTryCreateFromEnvUsesApplicationRootWhenDataPathIsTenantScoped(): void
+    {
+        // Arrange — simulates ContextTransformer narrowing DATA_PATH
+        $appRoot = $this->vfsDataPath('app-scoped');
+        $_ENV['DATA_PATH'] = $appRoot . '/tenants/campus26';
+        putenv('DATA_PATH=' . $_ENV['DATA_PATH']);
+
+        // Act
+        $registry = TenantShortnameRegistry::tryCreateFromEnv();
+
+        // Assert
+        $this->assertNotNull($registry);
+        $this->assertSame(
+            vfsStream::url('root/app-scoped/tenants/tenants.sqlite'),
+            $registry->getSqliteFilePath()
+        );
+    }
+
     public function testGetPdoCreatesTenantsDirectoryWhenMissing(): void
     {
         // Arrange

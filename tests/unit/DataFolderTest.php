@@ -176,4 +176,18 @@ class DataFolderTest extends TestCase
         // Assert
         $this->assertEquals($expectedPath, $actualPath);
     }
+
+    public function testGetDatabaseTenantsFullPathWhenDataPathIsTenantScoped(): void
+    {
+        // Arrange — simulates ContextTransformer after --tenant_id
+        $_ENV['DATA_PATH'] = '/tmp/app/tenants/campus26';
+        $dataFolder = new DataFolder();
+        $expectedPath = '/tmp/app/tenants/tenants.sqlite';
+
+        // Act
+        $actualPath = $dataFolder->getDatabaseTenantsFullPath();
+
+        // Assert
+        $this->assertEquals($expectedPath, $actualPath);
+    }
 }

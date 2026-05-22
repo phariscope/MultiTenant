@@ -41,6 +41,32 @@ class DataFolder implements DataFolderPathInterface
 
     public function getDatabaseTenantsFullPath(): string
     {
-        return sprintf("%s/%s", $this->getDataRootFolder(), "tenants/tenants.sqlite");
+        return sprintf(
+            "%s/%s/%s",
+            $this->getApplicationDataRoot(),
+            self::TENANTS_SUB_FOLDER,
+            'tenants.sqlite'
+        );
+    }
+
+    /**
+     * Application data root (unscoped DATA_PATH), even when $_ENV['DATA_PATH'] was
+     * narrowed to {root}/tenants/{tenantId} by ContextTransformer.
+     */
+    private function getApplicationDataRoot(): string
+    {
+        $dataRoot = $this->getDataRootFolder();
+        $normalized = rtrim(str_replace('\\', '/', $dataRoot), '/');
+
+        $pattern = sprintf('#/%s/([^/]+)$#', preg_quote(self::TENANTS_SUB_FOLDER, '#'));
+        if (preg_match($pattern, $normalized, $matches) === 1) {
+            return substr(
+                $normalized,
+                0,
+                -strlen('/' . self::TENANTS_SUB_FOLDER . '/' . $matches[1])
+            );
+        }
+
+        return $dataRoot;
     }
 }
