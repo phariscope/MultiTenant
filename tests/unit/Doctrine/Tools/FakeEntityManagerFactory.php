@@ -92,6 +92,31 @@ class FakeEntityManagerFactory
         return $this->createEntityManager($connection);
     }
 
+    /**
+     * Fast TCP probe (1s) — avoids long PDO timeouts when MariaDB is down.
+     */
+    public function isMariaDbReachable(): bool
+    {
+        static $reachable = null;
+        if ($reachable !== null) {
+            return $reachable;
+        }
+
+        $errno = 0;
+        $errstr = '';
+        $socket = @fsockopen('mariadb', 3306, $errno, $errstr, 1);
+        if (is_resource($socket)) {
+            fclose($socket);
+            $reachable = true;
+
+            return true;
+        }
+
+        $reachable = false;
+
+        return false;
+    }
+
     public function cleanMariadbDatabase(): void
     {
         $connection = DriverManager::getConnection(

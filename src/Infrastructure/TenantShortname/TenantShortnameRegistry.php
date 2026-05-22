@@ -10,8 +10,8 @@ use PDOException;
 use Phariscope\MultiTenant\DataFolder;
 
 /**
- * SQLite registry at {DATA_PATH}/tenants/tenants.sqlite where DATA_PATH is the application root.
- * Path calculation is delegated to DataFolder for consistency.
+ * SQLite registry at {application DATA_PATH}/tenants/tenants.sqlite (global, not per-tenant).
+ * Path calculation is delegated to DataFolder, which normalizes a tenant-scoped DATA_PATH.
  */
 final class TenantShortnameRegistry
 {

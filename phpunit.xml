@@ -5,7 +5,8 @@
   backupGlobals="false"
   colors="true"
   bootstrap="tests/bootstrap.php"
-  cacheDirectory="var/.phpunit.cache">
+  cacheDirectory="var/.phpunit.cache"
+  displayDetailsOnSkippedTests="true">
   <coverage/>
   <testsuites>
     <testsuite name="all">

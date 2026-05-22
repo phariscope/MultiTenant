@@ -18,6 +18,14 @@ use function SafePHP\strval;
 
 class DatabaseToolsTest extends TestCase
 {
+    private const MARIADB_SKIP_MESSAGE = <<<'MSG'
+MariaDB is not reachable at host "mariadb:3306" (required for MySQL/MariaDB coverage).
+Start the service, then re-run the tests:
+
+  docker compose up -d mariadb
+  bin/phpunit tests/unit/Doctrine/DatabaseToolsTest.php
+MSG;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -235,10 +243,8 @@ class DatabaseToolsTest extends TestCase
 
     private function skipIfMariaDbUnavailable(): void
     {
-        try {
-            (new FakeEntityManagerFactory())->cleanMariadbDatabase();
-        } catch (\Throwable) {
-            $this->markTestSkipped('MariaDB is not available for non-SQLite DatabaseTools coverage.');
+        if (!(new FakeEntityManagerFactory())->isMariaDbReachable()) {
+            $this->markTestSkipped(self::MARIADB_SKIP_MESSAGE);
         }
     }
 }
