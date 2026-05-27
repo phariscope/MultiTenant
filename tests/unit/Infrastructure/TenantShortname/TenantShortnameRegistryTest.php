@@ -84,6 +84,58 @@ class TenantShortnameRegistryTest extends TestCase
         $this->assertSame('am_cl_fixed', $resolved);
     }
 
+    public function testResolveShortnameReturnsMappedSlug(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $registry->register('tid-abc', 'My-Brand');
+
+        // Act
+        $shortname = $registry->resolveShortname('tid-abc');
+
+        // Assert
+        $this->assertSame('my-brand', $shortname);
+    }
+
+    public function testResolveShortnameReturnsNullForUnknownTenantId(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+
+        // Act
+        $shortname = $registry->resolveShortname('unknown-tenant');
+
+        // Assert
+        $this->assertNull($shortname);
+    }
+
+    public function testResolveShortnameReturnsNullForEmptyTenantId(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+
+        // Act
+        $shortname = $registry->resolveShortname('   ');
+
+        // Assert
+        $this->assertNull($shortname);
+    }
+
+    public function testResolveShortnameAfterRegisterReplacesShortname(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $registry->register('tid-abc', 'first-slug');
+        $registry->register('tid-abc', 'second-slug');
+
+        // Act
+        $shortname = $registry->resolveShortname('tid-abc');
+
+        // Assert
+        $this->assertSame('second-slug', $shortname);
+        $this->assertNull($registry->resolveTenantId('first-slug'));
+    }
+
     public function testTryCreateFromEnvUsesGetenvWhenNotInSuperglobal(): void
     {
         // Arrange
