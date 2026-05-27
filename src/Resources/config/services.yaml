@@ -13,3 +13,8 @@ services:
         tags: ['console.command']
         autowire: true
         autoconfigure: true
+
+    Phariscope\MultiTenant\Command\ShowTenantShortnameCommand:
+        tags: ['console.command']
+        autowire: true
+        autoconfigure: true

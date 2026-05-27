@@ -81,6 +81,29 @@ final class TenantShortnameRegistry
         }
     }
 
+    public function resolveShortname(string $tenantId): ?string
+    {
+        $id = trim($tenantId);
+        if ($id === '') {
+            return null;
+        }
+
+        try {
+            $stmt = $this->getPdo()->prepare(
+                'SELECT tenant_shortname FROM tenant_shortname_map WHERE tenant_id = :t LIMIT 1'
+            );
+            $stmt->execute(['t' => $id]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!is_array($row) || !isset($row['tenant_shortname']) || !is_string($row['tenant_shortname'])) {
+                return null;
+            }
+
+            return $row['tenant_shortname'];
+        } catch (PDOException) {
+            return null;
+        }
+    }
+
     public function register(string $tenantId, string $tenantShortname): void
     {
         if ($tenantId === '') {

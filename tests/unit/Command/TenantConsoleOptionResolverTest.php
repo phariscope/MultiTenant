@@ -54,7 +54,7 @@ class TenantConsoleOptionResolverTest extends TestCase
 
         // Assert
         $this->assertSame('t1', $resolved);
-        $registry = TenantShortnameRegistry::fromApplicationDataPath($this->isolatedDataPathDir);
+        $registry = $this->registryForIsolatedDataPath();
         $this->assertSame('t1', $registry->resolveTenantId('t1'));
     }
 
@@ -73,7 +73,7 @@ class TenantConsoleOptionResolverTest extends TestCase
 
         // Assert
         $this->assertSame('real-tenant-id', $resolved);
-        $registry = TenantShortnameRegistry::fromApplicationDataPath($this->isolatedDataPathDir);
+        $registry = $this->registryForIsolatedDataPath();
         $this->assertSame('real-tenant-id', $registry->resolveTenantId('acme'));
     }
 
@@ -119,7 +119,7 @@ class TenantConsoleOptionResolverTest extends TestCase
 
         // Assert
         $this->assertSame('campus26', $resolved);
-        $registry = TenantShortnameRegistry::fromApplicationDataPath($this->isolatedDataPathDir);
+        $registry = $this->registryForIsolatedDataPath();
         $this->assertSame('campus26', $registry->resolveTenantId('c26'));
         $this->assertFileDoesNotExist($scopedPath . '/tenants/tenants.sqlite');
     }
@@ -136,5 +136,13 @@ class TenantConsoleOptionResolverTest extends TestCase
         TenantConsoleOptionResolver::resolveTenantId($input);
 
         // Assert - PHPUnit verifies the exception
+    }
+
+    private function registryForIsolatedDataPath(): TenantShortnameRegistry
+    {
+        $dataPath = $this->isolatedDataPathDir;
+        self::assertNotNull($dataPath);
+
+        return TenantShortnameRegistry::fromApplicationDataPath($dataPath);
     }
 }

@@ -153,6 +153,7 @@ When creating or provisioning a tenant, the registry is updated in `tenants.sqli
 
 - **`CreateTenantService`**: always writes a mapping (`DATA_PATH` required). If `tenantShortname` is omitted, the shortname stored equals `tenant_id`.
 - **Bundle console commands** (`tenant:database:create`, `tenant:schema:create`, `tenant:schema:update`): `--tenant_id` is **required**. Optional `--tenant_shortname` registers a custom slug; if omitted, the shortname stored equals `tenant_id`. `--tenant_shortname` alone is rejected.
+- **`tenant:shortname:show`**: read-only lookup from `tenant_id` to the registered shortname (requires `DATA_PATH` and an existing row in `tenants.sqlite`).
 
 Console examples:
 
@@ -160,6 +161,8 @@ Console examples:
 bin/console tenant:database:create --tenant_id tenantID1234
 bin/console tenant:database:create --tenant_id tenantID1234 --tenant_shortname my-school
 bin/console tenant:schema:create --tenant_id tenantID1234 --tenant_shortname my-school
+bin/console tenant:shortname:show --tenant_id tenantID1234
+# prints my-school (or tenantID1234 if no custom shortname was registered)
 ```
 
 # How it works
