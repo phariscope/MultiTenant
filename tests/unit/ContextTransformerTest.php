@@ -479,7 +479,7 @@ class ContextTransformerTest extends TestCase
         $this->assertSame('only-space-form', $tenantId);
     }
 
-    public function testTransformDataPathThrowsForUnknownTenantIdInArgv(): void
+    public function testTransformDataPathWithUnknownTenantIdInArgvDoesNotValidate(): void
     {
         $base = sys_get_temp_dir() . '/mt-ctx-bad-id-' . uniqid('', true);
         mkdir($base, 0775, true);
@@ -495,15 +495,16 @@ class ContextTransformerTest extends TestCase
                 ],
             ];
 
-            $this->expectException(TenantException::class);
-            $this->expectExceptionMessage('Tenant not found: missing-tenant');
-            (new ContextTransformer($context))->transformDataPath();
+            $transformer = new ContextTransformer($context);
+            $transformer->transformDataPath();
+
+            $this->assertEnvValue('DATA_PATH', $base . '/tenants/missing-tenant');
         } finally {
             (new Filesystem())->remove($base);
         }
     }
 
-    public function testTransformDataPathThrowsForUnknownTenantShortnameInArgv(): void
+    public function testTransformDataPathWithUnknownTenantShortnameInArgvLeavesDataPathUnchanged(): void
     {
         $base = sys_get_temp_dir() . '/mt-ctx-bad-sn-' . uniqid('', true);
         mkdir($base, 0775, true);
@@ -520,33 +521,37 @@ class ContextTransformerTest extends TestCase
                 ],
             ];
 
-            $this->expectException(TenantException::class);
-            $this->expectExceptionMessage('Unknown tenant: bad-slug');
-            (new ContextTransformer($context))->transformDataPath();
+            $transformer = new ContextTransformer($context);
+            $transformer->transformDataPath();
+
+            $this->assertSame($base, $context['DATA_PATH']);
         } finally {
             (new Filesystem())->remove($base);
         }
     }
 
-    public function testTransformDataPathThrowsForTenantShortnameEqualsSyntaxWhenUnknown(): void
+    public function testTransformDataPathWithTenantShortnameInArgvResolvesWithoutValidation(): void
     {
-        $base = sys_get_temp_dir() . '/mt-ctx-bad-sn-eq-' . uniqid('', true);
+        $base = sys_get_temp_dir() . '/mt-ctx-sn-' . uniqid('', true);
         mkdir($base, 0775, true);
 
         try {
-            TenantShortnameRegistry::fromApplicationDataPath($base);
+            $registry = TenantShortnameRegistry::fromApplicationDataPath($base);
+            $registry->register('tid-console', 'slug-console');
+
             $context = [
                 'DATA_PATH' => $base,
                 'argv' => [
                     'bin/console',
                     'some:command',
-                    '--tenant_shortname=bad-slug',
+                    '--tenant_shortname=slug-console',
                 ],
             ];
 
-            $this->expectException(TenantException::class);
-            $this->expectExceptionMessage('Unknown tenant: bad-slug');
-            (new ContextTransformer($context))->transformDataPath();
+            $transformer = new ContextTransformer($context);
+            $transformer->transformDataPath();
+
+            $this->assertEnvValue('DATA_PATH', $base . '/tenants/tid-console');
         } finally {
             (new Filesystem())->remove($base);
         }

@@ -14,6 +14,8 @@ Ce document résume les conventions utilisées dans ce dépôt. Il complète `CO
 
 - **Inspiration DDD** : séparation Domain (`Domain/Model`), Application (`Application/Service`), Infrastructure (`Infrastructure/`, `Doctrine/`).
 - **Résolution du tenant** : `TenantManager` pour l’entrée HTTP (identifiants, session, en-têtes, JSON) ; `ContextTransformer` pour le bootstrap console / variables d’environnement (`DATA_PATH`, `DATABASE_URL`). Le **`tenant_shortname`** est résolu vers le **`tenant_id`** via `tenants/tenants.sqlite` (voir README).
+- **Validation HTTP** (`TenantExistenceChecker::assertResolvableForHttp`) : `tenant_id` → dossier `{DATA_PATH}/tenants/{tenant_id}/` requis ; `tenant_shortname` → entrée dans `tenants.sqlite` ; les deux ensemble → les deux contrôles + cohérence id/slug.
+- **Console** (`ContextTransformer` + `argv`) : pas de validation d’existence ; `--tenant_id` est utilisé tel quel, `--tenant_shortname` seul est résolu via le registre sans lever d’exception si inconnu.
 - **Chemins et SQLite métier** : toujours dérivés du **`tenant_id`** canonique après résolution éventuelle depuis `tenant_shortname` (voir README, section identifiants de tenant).
 
 ## Dépendances Symfony

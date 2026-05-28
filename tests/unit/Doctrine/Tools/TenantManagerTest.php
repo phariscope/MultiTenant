@@ -623,6 +623,28 @@ class TenantManagerTest extends TestCase
         }
     }
 
+    public function testResolvesShortnameFromRegistryWithoutTenantFolder(): void
+    {
+        $tmp = sys_get_temp_dir() . '/mt-tm-sn-no-dir-' . uniqid('', true);
+        mkdir($tmp, 0775, true);
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+
+        try {
+            $_ENV['DATA_PATH'] = $tmp;
+            putenv('DATA_PATH=' . $tmp);
+            TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-no-dir', 'slug-no-dir');
+            $_SERVER['HTTP_X_TENANT_SHORTNAME'] = 'slug-no-dir';
+            $sut = new TenantManager();
+
+            $this->assertSame('tid-no-dir', $sut->getCurrentTenantId());
+        } finally {
+            unset($_SERVER['HTTP_X_TENANT_SHORTNAME']);
+            (new Filesystem())->remove($tmp);
+            $this->restoreDataPath($hadKey, $previous);
+        }
+    }
+
     public function testResolvesShortnameFromSymfonyPost(): void
     {
         // Arrange
