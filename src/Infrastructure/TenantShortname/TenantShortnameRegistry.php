@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use PDO;
 use PDOException;
 use Phariscope\MultiTenant\DataFolder;
+use RuntimeException;
 
 /**
  * SQLite registry at {application DATA_PATH}/tenants/tenants.sqlite (global, not per-tenant).
@@ -15,6 +16,11 @@ use Phariscope\MultiTenant\DataFolder;
  */
 final class TenantShortnameRegistry
 {
+    private const MAX_UNIQUE_SHORTNAME_ATTEMPTS = 100;
+
+    /** RFC 1035 maximum length of a single DNS label. */
+    private const MAX_SHORTNAME_LENGTH = 63;
+
     private ?PDO $pdo = null;
 
     public function __construct(
@@ -115,9 +121,12 @@ final class TenantShortnameRegistry
             throw new InvalidArgumentException('tenant_shortname must not be empty.');
         }
 
-        if (strtolower($tenantId) !== $key && !self::isValidShortname($key)) {
+        if (!self::isAllowedShortname($tenantId, $key)) {
             throw new InvalidArgumentException(
-                'tenant_shortname must be a DNS-like label (lowercase letters, digits, hyphen; 1-63 chars).'
+                sprintf(
+                    'tenant_shortname must be a DNS-like label (lowercase letters, digits, hyphen; 1-%d chars).',
+                    self::MAX_SHORTNAME_LENGTH
+                )
             );
         }
 
@@ -135,6 +144,66 @@ final class TenantShortnameRegistry
             $pdo->rollBack();
             throw $e;
         }
+    }
+
+    /**
+     * Registers a shortname for the tenant, allocating a unique variant when the desired slug is taken.
+     * Tries the base slug first, then {@code base-2}, {@code base-3}, etc.
+     *
+     * @return non-empty-string the shortname actually stored (normalized)
+     */
+    public function registerUniqueShortname(string $tenantId, string $desiredShortname): string
+    {
+        if ($tenantId === '') {
+            throw new InvalidArgumentException('tenant_id must not be empty.');
+        }
+
+        $base = self::normalizeShortname($desiredShortname);
+        if ($base === '') {
+            throw new InvalidArgumentException('tenant_shortname must not be empty.');
+        }
+
+        if (!self::isAllowedShortname($tenantId, $base)) {
+            throw new InvalidArgumentException(
+                sprintf(
+                    'tenant_shortname must be a DNS-like label (lowercase letters, digits, hyphen; 1-%d chars).',
+                    self::MAX_SHORTNAME_LENGTH
+                )
+            );
+        }
+
+        for ($attempt = 0; $attempt < self::MAX_UNIQUE_SHORTNAME_ATTEMPTS; ++$attempt) {
+            $candidate = $attempt === 0
+                ? $base
+                : self::buildSuffixedShortname($base, $attempt + 1);
+
+            if (!self::isAllowedShortname($tenantId, $candidate)) {
+                continue;
+            }
+
+            $owner = $this->resolveTenantId($candidate);
+            if ($owner !== null && $owner !== $tenantId) {
+                continue;
+            }
+
+            try {
+                $this->register($tenantId, $candidate);
+
+                return $candidate;
+            } catch (PDOException $e) {
+                if (!self::isUniqueConstraintViolation($e)) {
+                    throw $e;
+                }
+            }
+        }
+
+        throw new RuntimeException(
+            sprintf(
+                'Could not allocate a unique tenant_shortname after %d attempts (base: %s).',
+                self::MAX_UNIQUE_SHORTNAME_ATTEMPTS,
+                $base
+            )
+        );
     }
 
     private function getPdo(): PDO
@@ -170,7 +239,7 @@ final class TenantShortnameRegistry
 
     private static function isValidShortname(string $normalized): bool
     {
-        if (strlen($normalized) < 1 || strlen($normalized) > 63) {
+        if (strlen($normalized) < 1 || strlen($normalized) > self::MAX_SHORTNAME_LENGTH) {
             return false;
         }
 
@@ -179,5 +248,48 @@ final class TenantShortnameRegistry
         }
 
         return preg_match('/^[a-z0-9-]+$/', $normalized) === 1;
+    }
+
+    private static function isAllowedShortname(string $tenantId, string $normalized): bool
+    {
+        if (strtolower($tenantId) === $normalized) {
+            return true;
+        }
+
+        if (self::isValidShortname($normalized)) {
+            return true;
+        }
+
+        $tenantLower = strtolower($tenantId);
+        $pattern = '/^' . preg_quote($tenantLower, '/') . '-\d+$/';
+
+        return preg_match($pattern, $normalized) === 1;
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private static function buildSuffixedShortname(string $base, int $suffixNumber): string
+    {
+        $suffix = '-' . (string) $suffixNumber;
+        $maxBaseLength = self::MAX_SHORTNAME_LENGTH - strlen($suffix);
+        $truncated = substr($base, 0, max(1, $maxBaseLength));
+        $truncated = rtrim($truncated, '-');
+        if ($truncated === '') {
+            throw new InvalidArgumentException('tenant_shortname base is too long to append a numeric suffix.');
+        }
+
+        return $truncated . $suffix;
+    }
+
+    private static function isUniqueConstraintViolation(PDOException $e): bool
+    {
+        if ($e->getCode() === '23000') {
+            return true;
+        }
+
+        $message = $e->getMessage();
+
+        return stripos($message, 'UNIQUE constraint failed') !== false;
     }
 }

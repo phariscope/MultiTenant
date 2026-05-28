@@ -33,9 +33,12 @@ class CreateTenantService
         $shortname = $request->tenantShortname !== null && $request->tenantShortname !== ''
             ? $request->tenantShortname
             : $tenant->getTenantId();
-        $registry->register($tenant->getTenantId(), $shortname);
+        $registeredShortname = $registry->registerUniqueShortname($tenant->getTenantId(), $shortname);
 
-        $this->response = new CreateTenantResponse(tenantId: $tenant->getTenantId());
+        $this->response = new CreateTenantResponse(
+            tenantId: $tenant->getTenantId(),
+            tenantShortname: $registeredShortname,
+        );
     }
 
     public function getResponse(): CreateTenantResponse

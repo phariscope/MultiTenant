@@ -77,6 +77,26 @@ class TenantConsoleOptionResolverTest extends TestCase
         $this->assertSame('real-tenant-id', $registry->resolveTenantId('acme'));
     }
 
+    public function testRegistersUniqueSuffixWhenShortnameTaken(): void
+    {
+        // Arrange
+        $this->isolatedDataPathDir = sys_get_temp_dir() . '/mt-tcor-collision-' . uniqid('', true);
+        $this->setDataPathEnv($this->isolatedDataPathDir);
+        $registry = $this->registryForIsolatedDataPath();
+        $registry->register('other-tenant', 'acme');
+        $input = new ArrayInput([
+            '--tenant_id' => 'new-tenant-id',
+            '--tenant_shortname' => 'acme',
+        ], $this->definition());
+
+        // Act
+        $resolved = TenantConsoleOptionResolver::resolveTenantId($input);
+
+        // Assert
+        $this->assertSame('new-tenant-id', $resolved);
+        $this->assertSame('new-tenant-id', $registry->resolveTenantId('acme-2'));
+    }
+
     public function testRejectsNeitherOption(): void
     {
         // Arrange
