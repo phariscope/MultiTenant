@@ -4,6 +4,9 @@ namespace Phariscope\MultiTenant\Tests\Doctrine\Tools;
 
 use Phariscope\MultiTenant\Doctrine\Tools\TenantManager;
 use Phariscope\MultiTenant\Infrastructure\TenantShortname\TenantShortnameRegistry;
+use Phariscope\MultiTenant\Share\TenantException;
+use Phariscope\MultiTenant\Share\TenantExistenceChecker;
+use Phariscope\MultiTenant\Tests\Share\EnsuresTenantDirectoryTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,10 +15,15 @@ use function Safe\json_encode;
 
 class TenantManagerTest extends TestCase
 {
+    use EnsuresTenantDirectoryTrait;
+
     private TenantManager $tenantManager;
 
     /** @var array<string,mixed> */
     private array $server;
+
+    /** @var list<string> */
+    private array $tempDirs = [];
 
     protected function setUp(): void
     {
@@ -37,11 +45,19 @@ class TenantManagerTest extends TestCase
         $_SESSION = [];
         $_COOKIE = [];
         $_SERVER = $this->server;
+
+        foreach ($this->tempDirs as $dir) {
+            (new Filesystem())->remove($dir);
+        }
+        $this->tempDirs = [];
+        unset($_ENV['DATA_PATH']);
+        putenv('DATA_PATH');
     }
 
     public function testGetTenantIdFromRequestRequest(): void
     {
         // Arrange
+        $this->arrangeDataPathWithTenant('tenant_from_request');
         $_REQUEST['tenant_id'] = 'tenant_from_request';
 
         // Act
@@ -54,6 +70,7 @@ class TenantManagerTest extends TestCase
     public function testGetTenantIdFromGetRequest(): void
     {
         // Arrange
+        $this->arrangeDataPathWithTenant('tenant_from_get');
         $_GET['tenant_id'] = 'tenant_from_get';
 
         // Act
@@ -66,6 +83,7 @@ class TenantManagerTest extends TestCase
     public function testGetTenantIdFromPostRequest(): void
     {
         // Arrange
+        $this->arrangeDataPathWithTenant('tenant_from_post');
         $_POST['tenant_id'] = 'tenant_from_post';
 
         // Act
@@ -78,6 +96,7 @@ class TenantManagerTest extends TestCase
     public function testGetTenantIdFromSession(): void
     {
         // Arrange
+        $this->arrangeDataPathWithTenant('tenant_from_session');
         $MOCK_SESSION = [];
         $MOCK_SESSION['tenant_id'] = 'tenant_from_session';
 
@@ -93,6 +112,7 @@ class TenantManagerTest extends TestCase
     public function testGetTenantIdFromHttpHeader(): void
     {
         // Arrange
+        $this->arrangeDataPathWithTenant('tenant_from_header');
         $_SERVER['HTTP_X_TENANT_ID'] = 'tenant_from_header';
 
         // Act
@@ -105,6 +125,7 @@ class TenantManagerTest extends TestCase
     public function testGetTenantIdFromCookie(): void
     {
         // Arrange
+        $this->arrangeDataPathWithTenant('tenant_from_cookie');
         $_COOKIE['tenant_id'] = 'tenant_from_cookie';
 
         // Act
@@ -129,6 +150,7 @@ class TenantManagerTest extends TestCase
     public function testGetTenantIdFromSymfonyQuery(): void
     {
         // Arrange
+        $this->arrangeDataPathWithTenant('tenant_from_symfony_request');
         $request = new Request(['tenant_id' => 'tenant_from_symfony_request']);
 
         // Act
@@ -142,6 +164,7 @@ class TenantManagerTest extends TestCase
     public function testGetTenantIdFromSymfonyRequestPost(): void
     {
         // Arrange
+        $this->arrangeDataPathWithTenant('tenant_from_post_request');
         $request = new Request([], ['tenant_id' => 'tenant_from_post_request']);
 
         // Act
@@ -155,6 +178,7 @@ class TenantManagerTest extends TestCase
     public function testGetTenantIdFromSymfonyRequestCookie(): void
     {
         // Arrange
+        $this->arrangeDataPathWithTenant('tenant_from_cookie_request');
         $request = new Request([], [], [], ['tenant_id' => 'tenant_from_cookie_request']);
 
         // Act
@@ -168,6 +192,7 @@ class TenantManagerTest extends TestCase
     public function testGetTenantIdFromSymfonyRequestHeader(): void
     {
         // Arrange
+        $this->arrangeDataPathWithTenant('tenant_from_header_request');
         $request = new Request([], [], [], [], [], ['HTTP_X_TENANT_ID' => 'tenant_from_header_request']);
 
         // Act
@@ -181,6 +206,7 @@ class TenantManagerTest extends TestCase
     public function testConstructorWithActiveSession(): void
     {
         // Arrange
+        $this->arrangeDataPathWithTenant('tenant_from_active_session');
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -213,6 +239,7 @@ class TenantManagerTest extends TestCase
     public function testGetTenantIdFromJsonRequest(): void
     {
         // Arrange
+        $this->arrangeDataPathWithTenant('tenant_from_json_request');
         $request = new Request([], [], [], [], [], [], json_encode(['tenant_id' => 'tenant_from_json_request']));
 
         // Act
@@ -248,6 +275,7 @@ class TenantManagerTest extends TestCase
             putenv('DATA_PATH=' . $tmp);
             $registry = TenantShortnameRegistry::fromApplicationDataPath($tmp);
             $registry->register('resolved-tid', 'slug-one');
+            $this->ensureTenantDirectory($tmp, 'resolved-tid');
 
             $_SERVER['HTTP_X_TENANT_SHORTNAME'] = 'slug-one';
             $sut = new TenantManager();
@@ -282,6 +310,7 @@ class TenantManagerTest extends TestCase
             putenv('DATA_PATH=' . $tmp);
             $registry = TenantShortnameRegistry::fromApplicationDataPath($tmp);
             $registry->register('from-shortname', 'slug-one');
+            $this->ensureTenantDirectory($tmp, 'direct-id');
 
             $_SERVER['HTTP_X_TENANT_ID'] = 'direct-id';
             $_SERVER['HTTP_X_TENANT_SHORTNAME'] = 'slug-one';
@@ -332,10 +361,12 @@ class TenantManagerTest extends TestCase
 
             $registryRight = TenantShortnameRegistry::fromApplicationDataPath($tmpRight);
             $registryRight->register('tid-json', 'slug-json');
+            $this->ensureTenantDirectory($tmpRight, 'tid-json');
 
             $payload = json_encode(['tenant_shortname' => 'slug-json']);
             $request = new Request([], [], [], [], [], [], $payload);
-            $sut = new TenantManager($request, null, $registryRight);
+            $checker = new TenantExistenceChecker($tmpRight, $registryRight);
+            $sut = new TenantManager($request, null, $registryRight, $checker);
 
             // Act
             $tenantId = $sut->getCurrentTenantId();
@@ -367,6 +398,7 @@ class TenantManagerTest extends TestCase
             putenv('DATA_PATH=' . $tmp);
             $registry = TenantShortnameRegistry::fromApplicationDataPath($tmp);
             $registry->register('tid-q', 'slug-q');
+            $this->ensureTenantDirectory($tmp, 'tid-q');
 
             $request = new Request(['tenant_shortname' => 'slug-q']);
 
@@ -399,6 +431,7 @@ class TenantManagerTest extends TestCase
             $_ENV['DATA_PATH'] = $tmp;
             putenv('DATA_PATH=' . $tmp);
             TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-req', 'slug-req');
+            $this->ensureTenantDirectory($tmp, 'tid-req');
             $_REQUEST['tenant_shortname'] = 'slug-req';
             $sut = new TenantManager();
 
@@ -425,6 +458,7 @@ class TenantManagerTest extends TestCase
             $_ENV['DATA_PATH'] = $tmp;
             putenv('DATA_PATH=' . $tmp);
             TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-get-sn', 'slug-get');
+            $this->ensureTenantDirectory($tmp, 'tid-get-sn');
             $_GET['tenant_shortname'] = 'slug-get';
             $sut = new TenantManager();
 
@@ -451,6 +485,7 @@ class TenantManagerTest extends TestCase
             $_ENV['DATA_PATH'] = $tmp;
             putenv('DATA_PATH=' . $tmp);
             TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-post-sn', 'slug-post');
+            $this->ensureTenantDirectory($tmp, 'tid-post-sn');
             $_POST['tenant_shortname'] = 'slug-post';
             $sut = new TenantManager();
 
@@ -477,6 +512,7 @@ class TenantManagerTest extends TestCase
             $_ENV['DATA_PATH'] = $tmp;
             putenv('DATA_PATH=' . $tmp);
             TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-sess-sn', 'slug-sess');
+            $this->ensureTenantDirectory($tmp, 'tid-sess-sn');
             $session = ['tenant_shortname' => 'slug-sess'];
             $sut = new TenantManager(null, $session);
 
@@ -502,6 +538,7 @@ class TenantManagerTest extends TestCase
             $_ENV['DATA_PATH'] = $tmp;
             putenv('DATA_PATH=' . $tmp);
             TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-cookie-sn', 'slug-cookie');
+            $this->ensureTenantDirectory($tmp, 'tid-cookie-sn');
             $_COOKIE['tenant_shortname'] = 'slug-cookie';
             $sut = new TenantManager();
 
@@ -517,7 +554,7 @@ class TenantManagerTest extends TestCase
         }
     }
 
-    public function testReturnsNullWhenShortnameCannotBeResolvedWithoutRegistry(): void
+    public function testThrowsWhenShortnameCannotBeResolvedWithoutRegistry(): void
     {
         // Arrange
         $hadKey = array_key_exists('DATA_PATH', $_ENV);
@@ -527,14 +564,63 @@ class TenantManagerTest extends TestCase
         $_SERVER['HTTP_X_TENANT_SHORTNAME'] = 'unknown-slug';
         $sut = new TenantManager();
 
-        // Act
-        $tenantId = $sut->getCurrentTenantId();
-
         // Assert
-        $this->assertNull($tenantId);
+        $this->expectException(TenantException::class);
+        $this->expectExceptionMessage('Cannot resolve tenant shortname "unknown-slug"');
 
-        unset($_SERVER['HTTP_X_TENANT_SHORTNAME']);
-        $this->restoreDataPath($hadKey, $previous);
+        try {
+            // Act
+            $sut->getCurrentTenantId();
+        } finally {
+            unset($_SERVER['HTTP_X_TENANT_SHORTNAME']);
+            $this->restoreDataPath($hadKey, $previous);
+        }
+    }
+
+    public function testThrowsWhenUnknownShortnameWithRegistry(): void
+    {
+        $tmp = sys_get_temp_dir() . '/mt-tm-bad-sn-' . uniqid('', true);
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+
+        try {
+            $_ENV['DATA_PATH'] = $tmp;
+            putenv('DATA_PATH=' . $tmp);
+            TenantShortnameRegistry::fromApplicationDataPath($tmp);
+            $_SERVER['HTTP_X_TENANT_SHORTNAME'] = 'slug-inconnu';
+            $sut = new TenantManager();
+
+            $this->expectException(TenantException::class);
+            $this->expectExceptionMessage('Unknown tenant: slug-inconnu');
+            $sut->getCurrentTenantId();
+        } finally {
+            unset($_SERVER['HTTP_X_TENANT_SHORTNAME']);
+            (new Filesystem())->remove($tmp);
+            $this->restoreDataPath($hadKey, $previous);
+        }
+    }
+
+    public function testThrowsWhenTenantIdFolderIsMissing(): void
+    {
+        $tmp = sys_get_temp_dir() . '/mt-tm-missing-' . uniqid('', true);
+        mkdir($tmp, 0775, true);
+        $hadKey = array_key_exists('DATA_PATH', $_ENV);
+        $previous = $hadKey ? $_ENV['DATA_PATH'] : null;
+
+        try {
+            $_ENV['DATA_PATH'] = $tmp;
+            putenv('DATA_PATH=' . $tmp);
+            $_SERVER['HTTP_X_TENANT_ID'] = 'id-inexistant';
+            $sut = new TenantManager();
+
+            $this->expectException(TenantException::class);
+            $this->expectExceptionMessage('Tenant not found: id-inexistant');
+            $sut->getCurrentTenantId();
+        } finally {
+            unset($_SERVER['HTTP_X_TENANT_ID']);
+            (new Filesystem())->remove($tmp);
+            $this->restoreDataPath($hadKey, $previous);
+        }
     }
 
     public function testResolvesShortnameFromSymfonyPost(): void
@@ -548,6 +634,7 @@ class TenantManagerTest extends TestCase
             $_ENV['DATA_PATH'] = $tmp;
             putenv('DATA_PATH=' . $tmp);
             TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-sf-post', 'slug-sf-post');
+            $this->ensureTenantDirectory($tmp, 'tid-sf-post');
             $request = new Request([], ['tenant_shortname' => 'slug-sf-post']);
             $sut = new TenantManager($request);
 
@@ -573,6 +660,7 @@ class TenantManagerTest extends TestCase
             $_ENV['DATA_PATH'] = $tmp;
             putenv('DATA_PATH=' . $tmp);
             TenantShortnameRegistry::fromApplicationDataPath($tmp)->register('tid-sf-cookie', 'slug-sf-cookie');
+            $this->ensureTenantDirectory($tmp, 'tid-sf-cookie');
             $request = new Request([], [], [], ['tenant_shortname' => 'slug-sf-cookie']);
             $sut = new TenantManager($request);
 
@@ -598,6 +686,15 @@ class TenantManagerTest extends TestCase
 
         // Assert
         $this->assertNull($tenantId);
+    }
+
+    private function arrangeDataPathWithTenant(string $tenantId): void
+    {
+        $tmp = sys_get_temp_dir() . '/mt-tm-' . uniqid('', true);
+        $this->ensureTenantDirectory($tmp, $tenantId);
+        $_ENV['DATA_PATH'] = $tmp;
+        putenv('DATA_PATH=' . $tmp);
+        $this->tempDirs[] = $tmp;
     }
 
     /**
