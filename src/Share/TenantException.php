@@ -49,4 +49,17 @@ class TenantException extends Exception
             tenantShortname: $tenantShortname,
         );
     }
+
+    public static function tenantShortnameMismatch(string $tenantId, string $tenantShortname): self
+    {
+        return new self(
+            sprintf(
+                'Tenant shortname "%s" does not match tenant id "%s".',
+                $tenantShortname,
+                $tenantId,
+            ),
+            tenantId: $tenantId,
+            tenantShortname: $tenantShortname,
+        );
+    }
 }

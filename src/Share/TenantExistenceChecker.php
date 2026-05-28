@@ -14,14 +14,33 @@ class TenantExistenceChecker
     }
 
     /**
-     * Resolves and validates tenant identity when explicitly provided.
+     * HTTP validation: tenant_id requires an existing tenant folder; tenant_shortname requires a registry row.
      *
      * @throws TenantException
      */
-    public function assertResolvable(?string $tenantId, ?string $tenantShortname): ?string
+    public function assertResolvableForHttp(?string $tenantId, ?string $tenantShortname): ?string
     {
         $tenantId = $this->normalizeProvidedValue($tenantId);
         $tenantShortname = $this->normalizeProvidedValue($tenantShortname);
+
+        if ($tenantId === null && $tenantShortname === null) {
+            return null;
+        }
+
+        $registry = $this->getShortnameRegistry();
+
+        if ($tenantId !== null && $tenantShortname !== null) {
+            $this->assertTenantDirectoryExists($tenantId);
+            $resolvedFromShortname = $registry->resolveTenantId($tenantShortname);
+            if ($resolvedFromShortname === null) {
+                throw TenantException::unknownShortname($tenantShortname);
+            }
+            if ($resolvedFromShortname !== $tenantId) {
+                throw TenantException::tenantShortnameMismatch($tenantId, $tenantShortname);
+            }
+
+            return $tenantId;
+        }
 
         if ($tenantId !== null) {
             $this->assertTenantDirectoryExists($tenantId);
@@ -29,18 +48,10 @@ class TenantExistenceChecker
             return $tenantId;
         }
 
-        if ($tenantShortname === null) {
-            return null;
-        }
-
-        $registry = $this->shortnameRegistry
-            ?? TenantShortnameRegistry::fromApplicationDataPath($this->applicationDataPath);
         $resolved = $registry->resolveTenantId($tenantShortname);
         if ($resolved === null) {
             throw TenantException::unknownShortname($tenantShortname);
         }
-
-        $this->assertTenantDirectoryExists($resolved);
 
         return $resolved;
     }
@@ -53,6 +64,12 @@ class TenantExistenceChecker
         if (!is_dir($this->getTenantDirectoryPath($tenantId))) {
             throw TenantException::unknownTenantId($tenantId);
         }
+    }
+
+    private function getShortnameRegistry(): TenantShortnameRegistry
+    {
+        return $this->shortnameRegistry
+            ?? TenantShortnameRegistry::fromApplicationDataPath($this->applicationDataPath);
     }
 
     private function getTenantDirectoryPath(string $tenantId): string
