@@ -253,6 +253,50 @@ class TenantShortnameRegistryTest extends TestCase
         $this->assertSame('tid-first', $registry->resolveTenantId('shared-slug'));
     }
 
+    public function testRegisterUniqueAllocatesSuffixOnCollision(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $registry->register('tid-first', 'acme');
+
+        // Act
+        $allocated = $registry->registerUniqueShortname('tid-second', 'acme');
+
+        // Assert
+        $this->assertSame('acme-2', $allocated);
+        $this->assertSame('tid-second', $registry->resolveTenantId('acme-2'));
+        $this->assertSame('tid-first', $registry->resolveTenantId('acme'));
+    }
+
+    public function testRegisterUniqueAllocatesNextSuffixWhenMultipleTaken(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $registry->register('tid-first', 'acme');
+        $registry->register('tid-second', 'acme-2');
+
+        // Act
+        $allocated = $registry->registerUniqueShortname('tid-third', 'acme');
+
+        // Assert
+        $this->assertSame('acme-3', $allocated);
+        $this->assertSame('tid-third', $registry->resolveTenantId('acme-3'));
+    }
+
+    public function testRegisterUniqueIsIdempotentForSameTenant(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $registry->register('tid-abc', 'my-brand');
+
+        // Act
+        $allocated = $registry->registerUniqueShortname('tid-abc', 'My-Brand');
+
+        // Assert
+        $this->assertSame('my-brand', $allocated);
+        $this->assertSame('tid-abc', $registry->resolveTenantId('my-brand'));
+    }
+
     public function testResolveReturnsNullWhenDatabaseFileIsCorrupt(): void
     {
         // Arrange

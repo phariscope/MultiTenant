@@ -6,6 +6,7 @@ use Doctrine\DBAL\DriverManager;
 use Phariscope\MultiTenant\Doctrine\EntityManagerResolver;
 use Phariscope\MultiTenant\Doctrine\Tools\ParamsConnection;
 use Phariscope\MultiTenant\Tests\Doctrine\Tools\FakeEntityManagerFactory;
+use Phariscope\MultiTenant\Tests\Share\EnsuresTenantDirectoryTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -16,6 +17,8 @@ use function SafePHP\strval;
  */
 class EntityManagerResolverTest extends TestCase
 {
+    use EnsuresTenantDirectoryTrait;
+
     private ?string $savedEnvDataPath = null;
 
     protected function setUp(): void
@@ -29,7 +32,7 @@ class EntityManagerResolverTest extends TestCase
         if (isset($_ENV['DATA_PATH'])) {
             $this->savedEnvDataPath = $_ENV['DATA_PATH'];
         }
-        $_ENV['DATA_PATH'] = '../data/myApp';
+        $_ENV['DATA_PATH'] = FakeEntityManagerFactory::projectRoot() . FakeEntityManagerFactory::DATA_PATH;
     }
 
     protected function tearDown(): void
@@ -95,6 +98,7 @@ class EntityManagerResolverTest extends TestCase
     public function testGetEntityManagerByRequest(): void
     {
         // Arrange
+        $this->ensureTenantDirectory($_ENV['DATA_PATH'], 'tenant123');
         $request = new Request(['tenant_id' => 'tenant123']);
         $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
         $sut = new EntityManagerResolver($em);

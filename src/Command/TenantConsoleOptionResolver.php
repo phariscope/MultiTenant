@@ -34,7 +34,7 @@ final class TenantConsoleOptionResolver
         }
 
         $shortnameToRegister = $shortnameString !== '' ? $shortnameString : $tenantIdString;
-        $registry->register($tenantIdString, $shortnameToRegister);
+        $registry->registerUniqueShortname($tenantIdString, $shortnameToRegister);
 
         return $tenantIdString;
     }

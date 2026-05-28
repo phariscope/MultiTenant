@@ -151,9 +151,11 @@ Supported inputs mirror `tenant_id`: query/body parameters, session keys, cookie
 
 When creating or provisioning a tenant, the registry is updated in `tenants.sqlite`:
 
-- **`CreateTenantService`**: always writes a mapping (`DATA_PATH` required). If `tenantShortname` is omitted, the shortname stored equals `tenant_id`.
+- **`CreateTenantService`**: always writes a mapping (`DATA_PATH` required). If `tenantShortname` is omitted, the shortname stored equals `tenant_id`. The response includes the **final** shortname assigned.
 - **Bundle console commands** (`tenant:database:create`, `tenant:schema:create`, `tenant:schema:update`): `--tenant_id` is **required**. Optional `--tenant_shortname` registers a custom slug; if omitted, the shortname stored equals `tenant_id`. `--tenant_shortname` alone is rejected.
 - **`tenant:shortname:show`**: read-only lookup from `tenant_id` to the registered shortname (requires `DATA_PATH` and an existing row in `tenants.sqlite`).
+
+**Shortname collisions:** if the requested `tenant_shortname` is already used by another tenant, a numeric suffix is appended automatically (`my-school` → `my-school-2`, then `my-school-3`, etc.) until a free slug is found. The same rules apply in `CreateTenantService` and in console provisioning when `--tenant_shortname` is provided.
 
 Console examples:
 
