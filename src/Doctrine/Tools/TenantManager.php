@@ -74,7 +74,7 @@ class TenantManager
 
         $checker = $this->existenceChecker ?? new TenantExistenceChecker($dataPath, $this->shortnameRegistry);
 
-        return $checker->assertResolvable($tenantId, $tenantShortname);
+        return $checker->assertResolvableForHttp($tenantId, $tenantShortname);
     }
 
     private function extractExplicitTenantId(): ?string

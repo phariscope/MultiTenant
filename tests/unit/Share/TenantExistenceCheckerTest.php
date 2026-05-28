@@ -32,7 +32,7 @@ class TenantExistenceCheckerTest extends TestCase
 
         try {
             $checker = new TenantExistenceChecker($base);
-            $this->assertNull($checker->assertResolvable(null, null));
+            $this->assertNull($checker->assertResolvableForHttp(null, null));
         } finally {
             (new Filesystem())->remove($base);
         }
@@ -46,13 +46,13 @@ class TenantExistenceCheckerTest extends TestCase
 
         try {
             $checker = new TenantExistenceChecker($base);
-            $this->assertSame('tid-ok', $checker->assertResolvable('tid-ok', null));
+            $this->assertSame('tid-ok', $checker->assertResolvableForHttp('tid-ok', null));
         } finally {
             (new Filesystem())->remove($base);
         }
     }
 
-    public function testUnknownTenantIdThrows(): void
+    public function testUnknownTenantIdThrowsWhenFolderMissing(): void
     {
         $base = sys_get_temp_dir() . '/mt-checker-missing-' . uniqid('', true);
         mkdir($base, 0775, true);
@@ -61,7 +61,7 @@ class TenantExistenceCheckerTest extends TestCase
             $checker = new TenantExistenceChecker($base);
             $this->expectException(TenantException::class);
             $this->expectExceptionMessage('Tenant not found: missing-id');
-            $checker->assertResolvable('missing-id', null);
+            $checker->assertResolvableForHttp('missing-id', null);
         } finally {
             (new Filesystem())->remove($base);
         }
@@ -77,13 +77,13 @@ class TenantExistenceCheckerTest extends TestCase
             $checker = new TenantExistenceChecker($base, $registry);
             $this->expectException(TenantException::class);
             $this->expectExceptionMessage('Unknown tenant: bad-slug');
-            $checker->assertResolvable(null, 'bad-slug');
+            $checker->assertResolvableForHttp(null, 'bad-slug');
         } finally {
             (new Filesystem())->remove($base);
         }
     }
 
-    public function testValidShortnameResolvesAndChecksFolder(): void
+    public function testValidShortnameResolvesWithoutFolderCheck(): void
     {
         $base = sys_get_temp_dir() . '/mt-checker-ok-sn-' . uniqid('', true);
         mkdir($base, 0775, true);
@@ -91,10 +91,63 @@ class TenantExistenceCheckerTest extends TestCase
         try {
             $registry = TenantShortnameRegistry::fromApplicationDataPath($base);
             $registry->register('tid-slug', 'acme');
-            $this->ensureTenantDirectory($base, 'tid-slug');
 
             $checker = new TenantExistenceChecker($base, $registry);
-            $this->assertSame('tid-slug', $checker->assertResolvable(null, 'acme'));
+            $this->assertSame('tid-slug', $checker->assertResolvableForHttp(null, 'acme'));
+        } finally {
+            (new Filesystem())->remove($base);
+        }
+    }
+
+    public function testBothProvidedValidatesFolderAndRegistry(): void
+    {
+        $base = sys_get_temp_dir() . '/mt-checker-both-' . uniqid('', true);
+        mkdir($base, 0775, true);
+
+        try {
+            $registry = TenantShortnameRegistry::fromApplicationDataPath($base);
+            $registry->register('tid-both', 'slug-both');
+            $this->ensureTenantDirectory($base, 'tid-both');
+
+            $checker = new TenantExistenceChecker($base, $registry);
+            $this->assertSame('tid-both', $checker->assertResolvableForHttp('tid-both', 'slug-both'));
+        } finally {
+            (new Filesystem())->remove($base);
+        }
+    }
+
+    public function testBothProvidedThrowsWhenShortnameDoesNotMatchTenantId(): void
+    {
+        $base = sys_get_temp_dir() . '/mt-checker-mismatch-' . uniqid('', true);
+        mkdir($base, 0775, true);
+
+        try {
+            $registry = TenantShortnameRegistry::fromApplicationDataPath($base);
+            $registry->register('tid-a', 'slug-a');
+            $this->ensureTenantDirectory($base, 'tid-b');
+
+            $checker = new TenantExistenceChecker($base, $registry);
+            $this->expectException(TenantException::class);
+            $this->expectExceptionMessage('Tenant shortname "slug-a" does not match tenant id "tid-b".');
+            $checker->assertResolvableForHttp('tid-b', 'slug-a');
+        } finally {
+            (new Filesystem())->remove($base);
+        }
+    }
+
+    public function testBothProvidedThrowsWhenShortnameUnknown(): void
+    {
+        $base = sys_get_temp_dir() . '/mt-checker-both-sn-' . uniqid('', true);
+        mkdir($base, 0775, true);
+
+        try {
+            TenantShortnameRegistry::fromApplicationDataPath($base);
+            $this->ensureTenantDirectory($base, 'tid-only');
+
+            $checker = new TenantExistenceChecker($base);
+            $this->expectException(TenantException::class);
+            $this->expectExceptionMessage('Unknown tenant: unknown-slug');
+            $checker->assertResolvableForHttp('tid-only', 'unknown-slug');
         } finally {
             (new Filesystem())->remove($base);
         }

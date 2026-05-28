@@ -7,7 +7,6 @@ use Phariscope\MultiTenant\Doctrine\Tools\TenantManager;
 use Phariscope\MultiTenant\Infrastructure\TenantShortname\TenantShortnameRegistry;
 use Phariscope\MultiTenant\Share\TenantDataPath;
 use Phariscope\MultiTenant\Share\TenantException;
-use Phariscope\MultiTenant\Share\TenantExistenceChecker;
 
 class ContextTransformer
 {
@@ -61,8 +60,7 @@ class ContextTransformer
                 throw TenantException::unknownTenantId($tenantId);
             }
 
-            $checker = new TenantExistenceChecker($this->initialDataPath);
-            $this->resolvedTenantId = $checker->assertResolvable($tenantId, $shortname);
+            $this->resolvedTenantId = $this->resolveConsoleTenantId($tenantId, $shortname);
             $this->tenantIdResolved = true;
 
             return $this->resolvedTenantId;
@@ -73,6 +71,20 @@ class ContextTransformer
         $this->tenantIdResolved = true;
 
         return $this->resolvedTenantId;
+    }
+
+    private function resolveConsoleTenantId(?string $tenantId, ?string $shortname): ?string
+    {
+        if ($tenantId !== null) {
+            return $tenantId;
+        }
+
+        if ($shortname === null || $this->initialDataPath === null) {
+            return null;
+        }
+
+        return TenantShortnameRegistry::fromApplicationDataPath($this->initialDataPath)
+            ->resolveTenantId($shortname);
     }
 
     private function extractTenantIdFromArgv(): ?string
