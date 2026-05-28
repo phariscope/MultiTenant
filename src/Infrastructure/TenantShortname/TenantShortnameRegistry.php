@@ -18,6 +18,9 @@ final class TenantShortnameRegistry
 {
     private const MAX_UNIQUE_SHORTNAME_ATTEMPTS = 100;
 
+    /** RFC 1035 maximum length of a single DNS label. */
+    private const MAX_SHORTNAME_LENGTH = 63;
+
     private ?PDO $pdo = null;
 
     public function __construct(
@@ -120,7 +123,10 @@ final class TenantShortnameRegistry
 
         if (!self::isAllowedShortname($tenantId, $key)) {
             throw new InvalidArgumentException(
-                'tenant_shortname must be a DNS-like label (lowercase letters, digits, hyphen; 1-63 chars).'
+                sprintf(
+                    'tenant_shortname must be a DNS-like label (lowercase letters, digits, hyphen; 1-%d chars).',
+                    self::MAX_SHORTNAME_LENGTH
+                )
             );
         }
 
@@ -159,7 +165,10 @@ final class TenantShortnameRegistry
 
         if (!self::isAllowedShortname($tenantId, $base)) {
             throw new InvalidArgumentException(
-                'tenant_shortname must be a DNS-like label (lowercase letters, digits, hyphen; 1-63 chars).'
+                sprintf(
+                    'tenant_shortname must be a DNS-like label (lowercase letters, digits, hyphen; 1-%d chars).',
+                    self::MAX_SHORTNAME_LENGTH
+                )
             );
         }
 
@@ -230,7 +239,7 @@ final class TenantShortnameRegistry
 
     private static function isValidShortname(string $normalized): bool
     {
-        if (strlen($normalized) < 1 || strlen($normalized) > 63) {
+        if (strlen($normalized) < 1 || strlen($normalized) > self::MAX_SHORTNAME_LENGTH) {
             return false;
         }
 
@@ -263,7 +272,7 @@ final class TenantShortnameRegistry
     private static function buildSuffixedShortname(string $base, int $suffixNumber): string
     {
         $suffix = '-' . (string) $suffixNumber;
-        $maxBaseLength = 63 - strlen($suffix);
+        $maxBaseLength = self::MAX_SHORTNAME_LENGTH - strlen($suffix);
         $truncated = substr($base, 0, max(1, $maxBaseLength));
         $truncated = rtrim($truncated, '-');
         if ($truncated === '') {
