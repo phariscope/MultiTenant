@@ -34,6 +34,7 @@ class CreateTenantServiceTest extends TestCase
         $response = $sut->getResponse();
 
         $this->assertEquals('am_cl_1234567890', $response->tenantId);
+        $this->assertSame('am_cl_1234567890', $response->tenantShortname);
         $this->assertSame('am_cl_1234567890', $registry->resolveTenantId('am_cl_1234567890'));
     }
 
@@ -49,8 +50,29 @@ class CreateTenantServiceTest extends TestCase
         $sut = new CreateTenantService(new TenantRepositoryInMemory(), $registry);
 
         $sut->execute($request);
+        $response = $sut->getResponse();
 
+        $this->assertSame('campus-26', $response->tenantShortname);
         $this->assertSame('am_cl_1234567890', $registry->resolveTenantId('campus-26'));
+    }
+
+    public function testExecuteAllocatesSuffixWhenShortnameTaken(): void
+    {
+        $this->tmpBase = sys_get_temp_dir() . '/mt-cts-' . uniqid('', true);
+        $registry = TenantShortnameRegistry::fromApplicationDataPath($this->tmpBase);
+        $registry->register('existing-tenant', 'campus-26');
+
+        $request = new CreateTenantRequest(
+            tenantId: 'am_cl_new',
+            tenantShortname: 'campus-26',
+        );
+        $sut = new CreateTenantService(new TenantRepositoryInMemory(), $registry);
+
+        $sut->execute($request);
+        $response = $sut->getResponse();
+
+        $this->assertSame('campus-26-2', $response->tenantShortname);
+        $this->assertSame('am_cl_new', $registry->resolveTenantId('campus-26-2'));
     }
 
     public function testExecuteCallsTenantRepositoryCreate(): void
