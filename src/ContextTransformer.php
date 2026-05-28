@@ -6,6 +6,8 @@ use Phariscope\MultiTenant\Doctrine\Sqlite\PathTransformer;
 use Phariscope\MultiTenant\Doctrine\Tools\TenantManager;
 use Phariscope\MultiTenant\Infrastructure\TenantShortname\TenantShortnameRegistry;
 use Phariscope\MultiTenant\Share\TenantDataPath;
+use Phariscope\MultiTenant\Share\TenantException;
+use Phariscope\MultiTenant\Share\TenantExistenceChecker;
 
 class ContextTransformer
 {
@@ -13,6 +15,8 @@ class ContextTransformer
     private array $context;
     private ?string $initialDataPath;
     private ?string $initialDatabaseUrl;
+    private bool $tenantIdResolved = false;
+    private ?string $resolvedTenantId = null;
 
     /**
      * @param array<string, mixed> $context
@@ -36,24 +40,39 @@ class ContextTransformer
         }
     }
 
+    /**
+     * @throws TenantException
+     */
     private function extractTenantIdFromContext(): ?string
     {
-        $tenantId = $this->extractTenantIdFromArgv();
-        if ($tenantId !== null) {
-            return $tenantId;
+        if ($this->tenantIdResolved) {
+            return $this->resolvedTenantId;
         }
 
+        $tenantId = $this->extractTenantIdFromArgv();
         $shortname = $this->extractTenantShortnameFromArgv();
-        if ($shortname !== null && $this->initialDataPath !== null) {
-            $registry = TenantShortnameRegistry::fromApplicationDataPath($this->initialDataPath);
-            $resolved = $registry->resolveTenantId($shortname);
-            if ($resolved !== null) {
-                return $resolved;
+
+        if ($tenantId !== null || $shortname !== null) {
+            if ($this->initialDataPath === null) {
+                if ($shortname !== null) {
+                    throw TenantException::cannotResolveShortname($shortname);
+                }
+
+                throw TenantException::unknownTenantId($tenantId);
             }
+
+            $checker = new TenantExistenceChecker($this->initialDataPath);
+            $this->resolvedTenantId = $checker->assertResolvable($tenantId, $shortname);
+            $this->tenantIdResolved = true;
+
+            return $this->resolvedTenantId;
         }
 
         $tenantManager = new TenantManager();
-        return $tenantManager->getCurrentTenantId();
+        $this->resolvedTenantId = $tenantManager->getCurrentTenantId();
+        $this->tenantIdResolved = true;
+
+        return $this->resolvedTenantId;
     }
 
     private function extractTenantIdFromArgv(): ?string
@@ -67,14 +86,16 @@ class ContextTransformer
         // Recherche l'option --tenant_id suivie de sa valeur dans l'argument suivant
         for ($i = 0; $i < count($argv) - 1; $i++) {
             if ($argv[$i] === '--tenant_id') {
-                return $argv[$i + 1];
+                $value = $argv[$i + 1];
+                return is_string($value) && trim($value) !== '' ? $value : null;
             }
         }
 
         // Maintien de la compatibilité avec l'ancien format --tenant_id=value
         foreach ($argv as $arg) {
             if (strpos($arg, '--tenant_id=') === 0) {
-                return substr($arg, strlen('--tenant_id='));
+                $value = substr($arg, strlen('--tenant_id='));
+                return trim($value) !== '' ? $value : null;
             }
         }
 
@@ -91,13 +112,15 @@ class ContextTransformer
 
         for ($i = 0; $i < count($argv) - 1; $i++) {
             if ($argv[$i] === '--tenant_shortname') {
-                return $argv[$i + 1];
+                $value = $argv[$i + 1];
+                return is_string($value) && trim($value) !== '' ? $value : null;
             }
         }
 
         foreach ($argv as $arg) {
             if (strpos($arg, '--tenant_shortname=') === 0) {
-                return substr($arg, strlen('--tenant_shortname='));
+                $value = substr($arg, strlen('--tenant_shortname='));
+                return trim($value) !== '' ? $value : null;
             }
         }
 

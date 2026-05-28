@@ -3,6 +3,8 @@
 namespace Phariscope\MultiTenant\Doctrine\Tools;
 
 use Phariscope\MultiTenant\Infrastructure\TenantShortname\TenantShortnameRegistry;
+use Phariscope\MultiTenant\Share\TenantException;
+use Phariscope\MultiTenant\Share\TenantExistenceChecker;
 use Symfony\Component\HttpFoundation\Request;
 
 use function Safe\json_decode;
@@ -22,6 +24,7 @@ class TenantManager
         ?Request $request = null,
         ?array $session = null,
         private readonly ?TenantShortnameRegistry $shortnameRegistry = null,
+        private readonly ?TenantExistenceChecker $existenceChecker = null,
     ) {
         if ($request !== null) {
             $this->request = $request;
@@ -42,28 +45,62 @@ class TenantManager
 
     public function getCurrentTenantId(): ?string
     {
+        $tenantId = $this->extractExplicitTenantId();
+        if ($tenantId !== null) {
+            return $this->validateTenant($tenantId, null);
+        }
+
+        $shortname = $this->extractExplicitTenantShortname();
+        if ($shortname !== null) {
+            return $this->validateTenant(null, $shortname);
+        }
+
+        return null;
+    }
+
+    /**
+     * @throws TenantException
+     */
+    private function validateTenant(?string $tenantId, ?string $tenantShortname): ?string
+    {
+        $dataPath = $_ENV['DATA_PATH'] ?? getenv('DATA_PATH');
+        if (!is_string($dataPath) || $dataPath === '') {
+            if ($tenantShortname !== null) {
+                throw TenantException::cannotResolveShortname($tenantShortname);
+            }
+
+            throw TenantException::unknownTenantId($tenantId ?? '');
+        }
+
+        $checker = $this->existenceChecker ?? new TenantExistenceChecker($dataPath, $this->shortnameRegistry);
+
+        return $checker->assertResolvable($tenantId, $tenantShortname);
+    }
+
+    private function extractExplicitTenantId(): ?string
+    {
         if (isset($_REQUEST['tenant_id'])) {
-            return strval($_REQUEST['tenant_id']);
+            return $this->normalizeProvidedValue(strval($_REQUEST['tenant_id']));
         }
 
         if (isset($_GET['tenant_id'])) {
-            return strval($_GET['tenant_id']);
+            return $this->normalizeProvidedValue(strval($_GET['tenant_id']));
         }
 
         if (isset($_POST['tenant_id'])) {
-            return strval($_POST['tenant_id']);
+            return $this->normalizeProvidedValue(strval($_POST['tenant_id']));
         }
 
         if (isset($this->session['tenant_id'])) {
-            return strval($this->session['tenant_id']);
+            return $this->normalizeProvidedValue(strval($this->session['tenant_id']));
         }
 
         if (isset($_SERVER['HTTP_X_TENANT_ID'])) {
-            return strval($_SERVER['HTTP_X_TENANT_ID']);
+            return $this->normalizeProvidedValue(strval($_SERVER['HTTP_X_TENANT_ID']));
         }
 
         if (isset($_COOKIE['tenant_id'])) {
-            return strval($_COOKIE['tenant_id']);
+            return $this->normalizeProvidedValue(strval($_COOKIE['tenant_id']));
         }
 
         if ($this->request->getContent() !== null) {
@@ -71,58 +108,38 @@ class TenantManager
             if (json_validate($content)) {
                 $json = json_decode($content, true);
                 if (is_array($json) && isset($json['tenant_id'])) {
-                    return strval($json['tenant_id']);
+                    return $this->normalizeProvidedValue(strval($json['tenant_id']));
                 }
             }
         }
 
-        $fromSymfony = $this->getTenantIdFromRequest($this->request);
-        if ($fromSymfony !== null) {
-            return $fromSymfony;
-        }
-
-        return $this->resolveTenantIdFromShortname();
+        return $this->getTenantIdFromRequest($this->request);
     }
 
-    private function resolveTenantIdFromShortname(): ?string
-    {
-        $shortname = $this->extractRawTenantShortname();
-        if ($shortname === null) {
-            return null;
-        }
-
-        $registry = $this->shortnameRegistry ?? TenantShortnameRegistry::tryCreateFromEnv();
-        if ($registry === null) {
-            return null;
-        }
-
-        return $registry->resolveTenantId($shortname);
-    }
-
-    private function extractRawTenantShortname(): ?string
+    private function extractExplicitTenantShortname(): ?string
     {
         if (isset($_REQUEST['tenant_shortname'])) {
-            return strval($_REQUEST['tenant_shortname']);
+            return $this->normalizeProvidedValue(strval($_REQUEST['tenant_shortname']));
         }
 
         if (isset($_GET['tenant_shortname'])) {
-            return strval($_GET['tenant_shortname']);
+            return $this->normalizeProvidedValue(strval($_GET['tenant_shortname']));
         }
 
         if (isset($_POST['tenant_shortname'])) {
-            return strval($_POST['tenant_shortname']);
+            return $this->normalizeProvidedValue(strval($_POST['tenant_shortname']));
         }
 
         if (isset($this->session['tenant_shortname'])) {
-            return strval($this->session['tenant_shortname']);
+            return $this->normalizeProvidedValue(strval($this->session['tenant_shortname']));
         }
 
         if (isset($_SERVER['HTTP_X_TENANT_SHORTNAME'])) {
-            return strval($_SERVER['HTTP_X_TENANT_SHORTNAME']);
+            return $this->normalizeProvidedValue(strval($_SERVER['HTTP_X_TENANT_SHORTNAME']));
         }
 
         if (isset($_COOKIE['tenant_shortname'])) {
-            return strval($_COOKIE['tenant_shortname']);
+            return $this->normalizeProvidedValue(strval($_COOKIE['tenant_shortname']));
         }
 
         if ($this->request->getContent() !== null) {
@@ -130,7 +147,7 @@ class TenantManager
             if (json_validate($content)) {
                 $json = json_decode($content, true);
                 if (is_array($json) && isset($json['tenant_shortname'])) {
-                    return strval($json['tenant_shortname']);
+                    return $this->normalizeProvidedValue(strval($json['tenant_shortname']));
                 }
             }
         }
@@ -141,19 +158,19 @@ class TenantManager
     private function getTenantIdFromRequest(Request $request): ?string
     {
         if ($request->query->has('tenant_id')) {
-            return strval($request->query->get('tenant_id'));
+            return $this->normalizeProvidedValue(strval($request->query->get('tenant_id')));
         }
 
         if ($request->request->has('tenant_id')) {
-            return strval($request->request->get('tenant_id'));
+            return $this->normalizeProvidedValue(strval($request->request->get('tenant_id')));
         }
 
         if ($request->cookies->has('tenant_id')) {
-            return strval($request->cookies->get('tenant_id'));
+            return $this->normalizeProvidedValue(strval($request->cookies->get('tenant_id')));
         }
 
         if ($request->headers->has('X-Tenant-Id')) {
-            return $request->headers->get('X-Tenant-Id');
+            return $this->normalizeProvidedValue($request->headers->get('X-Tenant-Id'));
         }
 
         return null;
@@ -162,22 +179,32 @@ class TenantManager
     private function getTenantShortnameFromRequest(Request $request): ?string
     {
         if ($request->query->has('tenant_shortname')) {
-            return strval($request->query->get('tenant_shortname'));
+            return $this->normalizeProvidedValue(strval($request->query->get('tenant_shortname')));
         }
 
         if ($request->request->has('tenant_shortname')) {
-            return strval($request->request->get('tenant_shortname'));
+            return $this->normalizeProvidedValue(strval($request->request->get('tenant_shortname')));
         }
 
         if ($request->cookies->has('tenant_shortname')) {
-            return strval($request->cookies->get('tenant_shortname'));
+            return $this->normalizeProvidedValue(strval($request->cookies->get('tenant_shortname')));
         }
 
         if ($request->headers->has('X-Tenant-Shortname')) {
-            $value = $request->headers->get('X-Tenant-Shortname');
-            return $value !== null && $value !== '' ? $value : null;
+            return $this->normalizeProvidedValue($request->headers->get('X-Tenant-Shortname'));
         }
 
         return null;
+    }
+
+    private function normalizeProvidedValue(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        return $trimmed === '' ? null : $trimmed;
     }
 }

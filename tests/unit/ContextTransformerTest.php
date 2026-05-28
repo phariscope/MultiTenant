@@ -4,11 +4,15 @@ namespace Phariscope\MultiTenant\Tests;
 
 use Phariscope\MultiTenant\ContextTransformer;
 use Phariscope\MultiTenant\Infrastructure\TenantShortname\TenantShortnameRegistry;
+use Phariscope\MultiTenant\Share\TenantException;
+use Phariscope\MultiTenant\Tests\Share\EnsuresTenantDirectoryTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 
 class ContextTransformerTest extends TestCase
 {
+    use EnsuresTenantDirectoryTrait;
+
     private ?string $originalDatabaseUrl;
     private ?string $originalDataPath;
     private ?string $originalHttpTenantId;
@@ -42,8 +46,10 @@ class ContextTransformerTest extends TestCase
     public function testTransformDataPathWithTenantIdInArgv(): void
     {
         // Arrange
+        $dataPath = './var/tmp/data/app';
+        $this->ensureTenantDirectory($dataPath, 't1234');
         $context = [
-            'DATA_PATH' => './var/tmp/data/app',
+            'DATA_PATH' => $dataPath,
             'argv' => [
                 'bin/console',
                 'tenant:database:create',
@@ -70,8 +76,10 @@ class ContextTransformerTest extends TestCase
     public function testTransformDataPathWithTenantIdInArgvWithEqualSign(): void
     {
         // Arrange
+        $dataPath = './var/tmp/data/app';
+        $this->ensureTenantDirectory($dataPath, 't1234');
         $context = [
-            'DATA_PATH' => './var/tmp/data/app',
+            'DATA_PATH' => $dataPath,
             'argv' => [
                 'bin/console',
                 'tenant:database:create',
@@ -109,8 +117,10 @@ class ContextTransformerTest extends TestCase
     public function testTransformDatabaseUrlWithTenantIdInArgv(): void
     {
         // Arrange
+        $dataPath = './var/tmp/data/app';
+        $this->ensureTenantDirectory($dataPath, 't1234');
         $context = [
-            'DATA_PATH' => './var/tmp/data/app',
+            'DATA_PATH' => $dataPath,
             'DATABASE_URL' => 'sqlite:///var/tmp/data/app/sqlite/data.sqlite',
             'argv' => [
                 'bin/console',
@@ -150,7 +160,7 @@ class ContextTransformerTest extends TestCase
         $this->assertEquals('sqlite:///var/tmp/data/app/sqlite/data.sqlite', $context['DATABASE_URL']);
     }
 
-    public function testDatabaseUrlShouldRemainUnchangedWithoutDataPath(): void
+    public function testDatabaseUrlThrowsWhenTenantIdInArgvWithoutDataPath(): void
     {
         // Arrange
         $context = [
@@ -163,12 +173,10 @@ class ContextTransformerTest extends TestCase
             ]
         ];
 
-        // Act
-        $transformer = new ContextTransformer($context);
-        $transformer->transformDatabaseUrl();
-
         // Assert
-        $this->assertEquals('sqlite:///var/tmp/data/app/sqlite/data.sqlite', $context['DATABASE_URL']);
+        $this->expectException(TenantException::class);
+        $this->expectExceptionMessage('Tenant not found: t1234');
+        (new ContextTransformer($context))->transformDatabaseUrl();
     }
 
     public function testExtractTenantIdFromArgv(): void
@@ -220,12 +228,14 @@ class ContextTransformerTest extends TestCase
     public function testTransformEnv(): void
     {
         // Arrange
+        $dataPath = './var/tmp/data/app';
+        $this->ensureTenantDirectory($dataPath, 't1234');
         $_ENV['DATABASE_URL'] = 'sqlite:///var/tmp/data/app/sqlite/data.sqlite';
-        $_ENV['DATA_PATH'] = './var/tmp/data/app';
+        $_ENV['DATA_PATH'] = $dataPath;
 
         $context = [
             'DATABASE_URL' => 'sqlite:///var/tmp/data/app/sqlite/data.sqlite',
-            'DATA_PATH' => './var/tmp/data/app',
+            'DATA_PATH' => $dataPath,
             'argv' => [
                 'bin/console',
                 'tenant:database:create',
@@ -253,12 +263,14 @@ class ContextTransformerTest extends TestCase
     public function testShouldAddEnvIfTheyAreNotSet(): void
     {
         // Arrange
+        $dataPath = './var/tmp/data/app';
+        $this->ensureTenantDirectory($dataPath, 't1234');
         unset($_ENV['DATABASE_URL']);
         unset($_ENV['DATA_PATH']);
 
         $context = [
             'DATABASE_URL' => 'sqlite:///var/tmp/data/app/sqlite/data.sqlite',
-            'DATA_PATH' => './var/tmp/data/app',
+            'DATA_PATH' => $dataPath,
             'argv' => [
                 'bin/console',
                 'tenant:database:create',
@@ -286,9 +298,14 @@ class ContextTransformerTest extends TestCase
     public function testShouldTransformInHttpContext(): void
     {
         // Arrange
+        $dataPath = sys_get_temp_dir() . '/mt-ctx-http-' . uniqid('', true);
+        mkdir($dataPath, 0775, true);
+        $this->ensureTenantDirectory($dataPath, 't1234');
+        $_ENV['DATA_PATH'] = $dataPath;
+        putenv('DATA_PATH=' . $dataPath);
         $context = [
-            'DATABASE_URL' => 'sqlite:///var/tmp/data/app/sqlite/data.sqlite',
-            'DATA_PATH' => './var/tmp/data/app',
+            'DATABASE_URL' => 'sqlite:///' . $dataPath . '/sqlite/data.sqlite',
+            'DATA_PATH' => $dataPath,
         ];
 
         $_SERVER['HTTP_X_TENANT_ID'] = 't1234';
@@ -299,11 +316,13 @@ class ContextTransformerTest extends TestCase
         $transformer->transformDatabaseUrl();
 
         // Assert
-        $this->assertEquals('./var/tmp/data/app/tenants/t1234', $context['DATA_PATH']);
+        $this->assertEquals($dataPath . '/tenants/t1234', $context['DATA_PATH']);
         $this->assertEquals(
-            'sqlite:///var/tmp/data/app/tenants/t1234/sqlite/data.sqlite',
+            'sqlite:///' . $dataPath . '/tenants/t1234/sqlite/data.sqlite',
             $context['DATABASE_URL']
         );
+
+        (new Filesystem())->remove($dataPath);
     }
 
     public function testTryCreateFromEnvAfterTransformDataPathUsesGlobalShortnameRegistry(): void
@@ -313,6 +332,7 @@ class ContextTransformerTest extends TestCase
         $appRoot = sys_get_temp_dir() . '/mt-ctx-global-' . uniqid('', true);
 
         try {
+            $this->ensureTenantDirectory($appRoot, 'campus26');
             $context = [
                 'DATA_PATH' => $appRoot,
                 'argv' => [
@@ -359,6 +379,7 @@ class ContextTransformerTest extends TestCase
         try {
             $registry = TenantShortnameRegistry::fromApplicationDataPath($base);
             $registry->register('tid-slug', 'acme');
+            $this->ensureTenantDirectory($base, 'tid-slug');
 
             $context = [
                 'DATA_PATH' => $base,
@@ -393,8 +414,10 @@ class ContextTransformerTest extends TestCase
     public function testTransformDatabaseUrlLeavesNonSqliteUrlUnchanged(): void
     {
         // Arrange
+        $dataPath = './var/tmp/data/app';
+        $this->ensureTenantDirectory($dataPath, 't1');
         $context = [
-            'DATA_PATH' => './var/tmp/data/app',
+            'DATA_PATH' => $dataPath,
             'DATABASE_URL' => 'mysql://user:pass@127.0.0.1:3306/appdb',
             'argv' => [
                 'bin/console',
@@ -454,5 +477,78 @@ class ContextTransformerTest extends TestCase
 
         // Assert
         $this->assertSame('only-space-form', $tenantId);
+    }
+
+    public function testTransformDataPathThrowsForUnknownTenantIdInArgv(): void
+    {
+        $base = sys_get_temp_dir() . '/mt-ctx-bad-id-' . uniqid('', true);
+        mkdir($base, 0775, true);
+
+        try {
+            $context = [
+                'DATA_PATH' => $base,
+                'argv' => [
+                    'bin/console',
+                    'tenant:database:create',
+                    '--tenant_id',
+                    'missing-tenant',
+                ],
+            ];
+
+            $this->expectException(TenantException::class);
+            $this->expectExceptionMessage('Tenant not found: missing-tenant');
+            (new ContextTransformer($context))->transformDataPath();
+        } finally {
+            (new Filesystem())->remove($base);
+        }
+    }
+
+    public function testTransformDataPathThrowsForUnknownTenantShortnameInArgv(): void
+    {
+        $base = sys_get_temp_dir() . '/mt-ctx-bad-sn-' . uniqid('', true);
+        mkdir($base, 0775, true);
+
+        try {
+            TenantShortnameRegistry::fromApplicationDataPath($base);
+            $context = [
+                'DATA_PATH' => $base,
+                'argv' => [
+                    'bin/console',
+                    'tenant:database:create',
+                    '--tenant_shortname',
+                    'bad-slug',
+                ],
+            ];
+
+            $this->expectException(TenantException::class);
+            $this->expectExceptionMessage('Unknown tenant: bad-slug');
+            (new ContextTransformer($context))->transformDataPath();
+        } finally {
+            (new Filesystem())->remove($base);
+        }
+    }
+
+    public function testTransformDataPathThrowsForTenantShortnameEqualsSyntaxWhenUnknown(): void
+    {
+        $base = sys_get_temp_dir() . '/mt-ctx-bad-sn-eq-' . uniqid('', true);
+        mkdir($base, 0775, true);
+
+        try {
+            TenantShortnameRegistry::fromApplicationDataPath($base);
+            $context = [
+                'DATA_PATH' => $base,
+                'argv' => [
+                    'bin/console',
+                    'some:command',
+                    '--tenant_shortname=bad-slug',
+                ],
+            ];
+
+            $this->expectException(TenantException::class);
+            $this->expectExceptionMessage('Unknown tenant: bad-slug');
+            (new ContextTransformer($context))->transformDataPath();
+        } finally {
+            (new Filesystem())->remove($base);
+        }
     }
 }
