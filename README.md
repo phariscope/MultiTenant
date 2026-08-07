@@ -154,6 +154,8 @@ When creating or provisioning a tenant, the registry is updated in `tenants.sqli
 - **`CreateTenantService`**: always writes a mapping (`DATA_PATH` required). If `tenantShortname` is omitted, the shortname stored equals `tenant_id`. The response includes the **final** shortname assigned.
 - **Bundle console commands** (`tenant:database:create`, `tenant:schema:create`, `tenant:schema:update`): `--tenant_id` is **required**. Optional `--tenant_shortname` registers a custom slug; if omitted, the shortname stored equals `tenant_id`. `--tenant_shortname` alone is rejected.
 - **`tenant:shortname:show`**: read-only lookup from `tenant_id` to the registered shortname (requires `DATA_PATH` and an existing row in `tenants.sqlite`).
+- **`TenantShortnameRegistry::unregister($tenantId)`**: removes the mapping for a tenant (idempotent).
+- **`DeleteTenantService` / `tenant:delete --tenant_id=…`**: deletes `{DATA_PATH}/tenants/{tenantId}/` **and** unregisters the shortname. Host apps should use this instead of removing tenant folders or writing SQL against `tenants.sqlite` themselves. Works even when `DATA_PATH` was narrowed by `ContextTransformer` (uses the application data root).
 
 **Shortname collisions:** if the requested `tenant_shortname` is already used by another tenant, a numeric suffix is appended automatically (`my-school` → `my-school-2`, then `my-school-3`, etc.) until a free slug is found. The same rules apply in `CreateTenantService` and in console provisioning when `--tenant_shortname` is provided.
 
@@ -165,6 +167,7 @@ bin/console tenant:database:create --tenant_id tenantID1234 --tenant_shortname m
 bin/console tenant:schema:create --tenant_id tenantID1234 --tenant_shortname my-school
 bin/console tenant:shortname:show --tenant_id tenantID1234
 # prints my-school (or tenantID1234 if no custom shortname was registered)
+bin/console tenant:delete --tenant_id tenantID1234
 ```
 
 # How it works
