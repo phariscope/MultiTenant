@@ -109,6 +109,40 @@ class TenantShortnameRegistryTest extends TestCase
         $this->assertNull($shortname);
     }
 
+    public function testUnregisterRemovesMapping(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $registry->register('tid-abc', 'my-brand');
+
+        // Act
+        $registry->unregister('tid-abc');
+
+        // Assert
+        $this->assertNull($registry->resolveTenantId('my-brand'));
+        $this->assertNull($registry->resolveShortname('tid-abc'));
+    }
+
+    public function testUnregisterIsIdempotentForUnknownTenantId(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+
+        // Act / Assert — no exception
+        $registry->unregister('unknown-tenant');
+        $this->assertNull($registry->resolveShortname('unknown-tenant'));
+    }
+
+    public function testUnregisterRejectsEmptyTenantId(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $this->expectException(InvalidArgumentException::class);
+
+        // Act
+        $registry->unregister('   ');
+    }
+
     public function testResolveShortnameReturnsNullForEmptyTenantId(): void
     {
         // Arrange

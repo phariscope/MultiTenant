@@ -147,6 +147,20 @@ final class TenantShortnameRegistry
     }
 
     /**
+     * Removes the shortname mapping for a tenant id (idempotent if none exists).
+     */
+    public function unregister(string $tenantId): void
+    {
+        $id = trim($tenantId);
+        if ($id === '') {
+            throw new InvalidArgumentException('tenant_id must not be empty.');
+        }
+
+        $stmt = $this->getPdo()->prepare('DELETE FROM tenant_shortname_map WHERE tenant_id = :t');
+        $stmt->execute(['t' => $id]);
+    }
+
+    /**
      * Registers a shortname for the tenant, allocating a unique variant when the desired slug is taken.
      * Tries the base slug first, then {@code base-2}, {@code base-3}, etc.
      *

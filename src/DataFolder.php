@@ -50,10 +50,24 @@ class DataFolder implements DataFolderPathInterface
     }
 
     /**
+     * Absolute tenant data directory under the application data root
+     * ({root}/tenants/{tenantId}), even when DATA_PATH is already tenant-scoped.
+     */
+    public function getAbsoluteTenantDataFolder(string $tenantId): string
+    {
+        return sprintf(
+            '%s/%s/%s',
+            rtrim($this->getApplicationDataRoot(), '/'),
+            self::TENANTS_SUB_FOLDER,
+            $tenantId
+        );
+    }
+
+    /**
      * Application data root (unscoped DATA_PATH), even when $_ENV['DATA_PATH'] was
      * narrowed to {root}/tenants/{tenantId} by ContextTransformer.
      */
-    private function getApplicationDataRoot(): string
+    public function getApplicationDataRoot(): string
     {
         $dataRoot = $this->getDataRootFolder();
         $normalized = rtrim(str_replace('\\', '/', $dataRoot), '/');
