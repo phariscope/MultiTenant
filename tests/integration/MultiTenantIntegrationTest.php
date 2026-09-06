@@ -45,8 +45,14 @@ class MultiTenantIntegrationTest extends TestCase
      */
     private function createEntityManagerFromEnv(): \Doctrine\ORM\EntityManagerInterface
     {
-        $dataPath = $_ENV['DATA_PATH'];
-        $databaseUrl = $_ENV['DATABASE_URL'];
+        $dataPath = $_ENV['DATA_PATH'] ?? '';
+        $databaseUrl = $_ENV['DATABASE_URL'] ?? '';
+        if (!is_string($dataPath)) {
+            $dataPath = '';
+        }
+        if (!is_string($databaseUrl)) {
+            $databaseUrl = '';
+        }
 
         // Extraire le nom du fichier de base de données depuis DATABASE_URL
         $databaseFileName = 'database.sqlite';

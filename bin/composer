@@ -9,4 +9,4 @@ docker run ${moinsit} --rm \
   -ti \
   --name composer-running-script \
   -v "$PWD":/usr/src \
-  composer:2.5.5 composer "$@"
+  composer:2.10.3 composer "$@"

@@ -105,6 +105,10 @@ class ContextTransformer
 
         // Maintien de la compatibilité avec l'ancien format --tenant_id=value
         foreach ($argv as $arg) {
+            if (!is_string($arg)) {
+                continue;
+            }
+
             if (strpos($arg, '--tenant_id=') === 0) {
                 $value = substr($arg, strlen('--tenant_id='));
                 return trim($value) !== '' ? $value : null;
@@ -130,6 +134,10 @@ class ContextTransformer
         }
 
         foreach ($argv as $arg) {
+            if (!is_string($arg)) {
+                continue;
+            }
+
             if (strpos($arg, '--tenant_shortname=') === 0) {
                 $value = substr($arg, strlen('--tenant_shortname='));
                 return trim($value) !== '' ? $value : null;

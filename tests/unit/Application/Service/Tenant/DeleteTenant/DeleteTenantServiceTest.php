@@ -23,7 +23,9 @@ final class DeleteTenantServiceTest extends TestCase
     {
         parent::setUp();
         $this->hadDataPath = array_key_exists('DATA_PATH', $_ENV);
-        $this->savedDataPath = $this->hadDataPath ? $_ENV['DATA_PATH'] : null;
+        $this->savedDataPath = $this->hadDataPath && is_string($_ENV['DATA_PATH'] ?? null)
+            ? $_ENV['DATA_PATH']
+            : null;
     }
 
     protected function tearDown(): void

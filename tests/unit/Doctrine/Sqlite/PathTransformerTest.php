@@ -13,7 +13,7 @@ class PathTransformerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        if (isset($_ENV['DATA_PATH'])) {
+        if (isset($_ENV['DATA_PATH']) && is_string($_ENV['DATA_PATH'])) {
             $this->savedEnvDataPath = $_ENV['DATA_PATH'];
         }
     }

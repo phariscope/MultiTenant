@@ -11,12 +11,16 @@ class DataFolder implements DataFolderPathInterface
 
     public function getDataRootFolder(): string
     {
-        return $_ENV[self::DATA_PATH_NAME];
+        $dataPath = $_ENV[self::DATA_PATH_NAME] ?? '';
+
+        return is_string($dataPath) ? $dataPath : '';
     }
 
     public function getTenantDataFolder(?string $tenantId = null): string
     {
-        $tenant = $tenantId ?? $_ENV["TENANT_ID"];
+        $tenantFromEnv = $_ENV['TENANT_ID'] ?? '';
+        $tenant = $tenantId ?? (is_string($tenantFromEnv) ? $tenantFromEnv : '');
+
         return sprintf("%s/%s/%s", $this->getDataRootFolder(), self::TENANTS_SUB_FOLDER, $tenant);
     }
 
@@ -28,7 +32,10 @@ class DataFolder implements DataFolderPathInterface
     public function getTenantDatabasePath(string $tenantId): string
     {
         // Extraire le chemin relatif complet depuis DATABASE_URL
-        $databaseUrl = $_ENV[self::DATABASE_URL_NAME];
+        $databaseUrl = $_ENV[self::DATABASE_URL_NAME] ?? '';
+        if (!is_string($databaseUrl)) {
+            $databaseUrl = '';
+        }
 
         // Gérer le format sqlite:///%DATA_PATH%/[chemin_relatif]
         if (preg_match('/sqlite:\/\/\/.*%' . self::DATA_PATH_NAME . '%\/(.+)$/', $databaseUrl, $matches)) {

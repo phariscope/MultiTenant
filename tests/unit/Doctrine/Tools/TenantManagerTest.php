@@ -33,8 +33,24 @@ class TenantManagerTest extends TestCase
         $_POST = [];
         $_SESSION = [];
         $_COOKIE = [];
-        $this->server = $_SERVER;
+        $this->server = self::stringKeyedServerArray($_SERVER);
         $_SERVER = [];
+    }
+
+    /**
+     * @param array<mixed> $server
+     * @return array<string, mixed>
+     */
+    private static function stringKeyedServerArray(array $server): array
+    {
+        $result = [];
+        foreach ($server as $key => $value) {
+            if (is_string($key)) {
+                $result[$key] = $value;
+            }
+        }
+
+        return $result;
     }
 
     public function tearDown(): void

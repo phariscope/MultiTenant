@@ -19,9 +19,12 @@ class ContextTransformerTest extends TestCase
     protected function setUp(): void
     {
         // sauvegarde les variables d'environnement
-        $this->originalDatabaseUrl = isset($_ENV['DATABASE_URL']) ? $_ENV['DATABASE_URL'] : null;
-        $this->originalDataPath = isset($_ENV['DATA_PATH']) ? $_ENV['DATA_PATH'] : null;
-        $this->originalHttpTenantId = isset($_SERVER['HTTP_X_TENANT_ID']) ? $_SERVER['HTTP_X_TENANT_ID'] : null;
+        $databaseUrl = $_ENV['DATABASE_URL'] ?? null;
+        $this->originalDatabaseUrl = is_string($databaseUrl) ? $databaseUrl : null;
+        $dataPath = $_ENV['DATA_PATH'] ?? null;
+        $this->originalDataPath = is_string($dataPath) ? $dataPath : null;
+        $httpTenantId = $_SERVER['HTTP_X_TENANT_ID'] ?? null;
+        $this->originalHttpTenantId = is_string($httpTenantId) ? $httpTenantId : null;
     }
 
     protected function tearDown(): void

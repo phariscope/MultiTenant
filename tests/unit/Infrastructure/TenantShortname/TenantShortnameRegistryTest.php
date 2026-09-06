@@ -21,7 +21,9 @@ class TenantShortnameRegistryTest extends TestCase
         parent::setUp();
         vfsStream::setup('root');
         $this->savedDataPathInEnv = array_key_exists('DATA_PATH', $_ENV);
-        $this->savedDataPath = $this->savedDataPathInEnv ? $_ENV['DATA_PATH'] : null;
+        $this->savedDataPath = $this->savedDataPathInEnv && is_string($_ENV['DATA_PATH'] ?? null)
+            ? $_ENV['DATA_PATH']
+            : null;
     }
 
     protected function tearDown(): void
