@@ -10,6 +10,8 @@ use Phariscope\MultiTenant\Tests\Share\IsolatesDataPathEnvTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Tester\CommandTester;
 
 class ShowTenantShortnameCommandTest extends TestCase
@@ -71,11 +73,36 @@ class ShowTenantShortnameCommandTest extends TestCase
     public function testExecuteFailsWhenTenantIdMissing(): void
     {
         // Act
-        $exitCode = $this->commandTester->execute([]);
+        $exitCode = $this->runCommandWithMockedErrorOutput('Provide --tenant_id.');
 
         // Assert
         $this->assertSame(Command::FAILURE, $exitCode);
-        $this->assertStringContainsString('Provide --tenant_id.', $this->commandTester->getDisplay());
+    }
+
+    public function testExecuteFailsWhenTenantIdIsWhitespaceOnly(): void
+    {
+        // Act
+        $exitCode = $this->runCommandWithMockedErrorOutput(
+            'Provide --tenant_id.',
+            ['--tenant_id' => '   ']
+        );
+
+        // Assert
+        $this->assertSame(Command::FAILURE, $exitCode);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     */
+    private function runCommandWithMockedErrorOutput(string $message, array $input = []): int
+    {
+        $command = new ShowTenantShortnameCommand();
+        $output = $this->createMock(OutputInterface::class);
+        $output->expects($this->once())
+            ->method('writeln')
+            ->with('<error>' . $message . '</error>');
+
+        return $command->run(new ArrayInput($input), $output);
     }
 
     public function testExecuteFailsWhenDataPathNotSet(): void

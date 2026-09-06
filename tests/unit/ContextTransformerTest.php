@@ -533,6 +533,190 @@ class ContextTransformerTest extends TestCase
         }
     }
 
+    public function testTransformDatabaseUrlWithoutTenantIdLeavesUrlUnchanged(): void
+    {
+        // Arrange
+        $context = [
+            'DATABASE_URL' => 'sqlite:///var/tmp/data/app/sqlite/data.sqlite',
+            'DATA_PATH' => './var/tmp/data/app',
+            'argv' => [
+                'bin/console',
+                'some:command',
+            ],
+        ];
+
+        // Act
+        $transformer = new ContextTransformer($context);
+        $transformer->transformDatabaseUrl();
+
+        // Assert
+        $this->assertSame('sqlite:///var/tmp/data/app/sqlite/data.sqlite', $context['DATABASE_URL']);
+    }
+
+    public function testExtractTenantIdFromArgvIgnoresWhitespaceOnlyValue(): void
+    {
+        // Arrange
+        $context = [
+            'argv' => [
+                'bin/console',
+                'tenant:database:create',
+                '--tenant_id',
+                '   ',
+            ],
+        ];
+        $transformer = new ContextTransformer($context);
+        $method = (new \ReflectionClass($transformer))->getMethod('extractTenantIdFromArgv');
+        $method->setAccessible(true);
+
+        // Act
+        $tenantId = $method->invoke($transformer);
+
+        // Assert
+        $this->assertNull($tenantId);
+    }
+
+    public function testExtractTenantIdFromArgvEqualsFormRejectsWhitespaceOnlyValue(): void
+    {
+        // Arrange
+        $context = [
+            'argv' => [
+                'bin/console',
+                'tenant:database:create',
+                '--tenant_id=   ',
+            ],
+        ];
+        $transformer = new ContextTransformer($context);
+        $method = (new \ReflectionClass($transformer))->getMethod('extractTenantIdFromArgv');
+        $method->setAccessible(true);
+
+        // Act
+        $tenantId = $method->invoke($transformer);
+
+        // Assert
+        $this->assertNull($tenantId);
+    }
+
+    public function testExtractTenantShortnameFromArgvEqualsFormRejectsWhitespaceOnlyValue(): void
+    {
+        // Arrange
+        $context = [
+            'argv' => [
+                'bin/console',
+                'some:command',
+                '--tenant_shortname=   ',
+            ],
+        ];
+        $transformer = new ContextTransformer($context);
+        $method = (new \ReflectionClass($transformer))->getMethod('extractTenantShortnameFromArgv');
+        $method->setAccessible(true);
+
+        // Act
+        $shortname = $method->invoke($transformer);
+
+        // Assert
+        $this->assertNull($shortname);
+    }
+
+    public function testExtractTenantIdFromArgvIgnoresNonStringValue(): void
+    {
+        // Arrange
+        $context = [
+            'argv' => [
+                'bin/console',
+                'tenant:database:create',
+                '--tenant_id',
+                12345,
+            ],
+        ];
+        $transformer = new ContextTransformer($context);
+        $method = (new \ReflectionClass($transformer))->getMethod('extractTenantIdFromArgv');
+        $method->setAccessible(true);
+
+        // Act
+        $tenantId = $method->invoke($transformer);
+
+        // Assert
+        $this->assertNull($tenantId);
+    }
+
+    public function testExtractTenantShortnameFromArgvIgnoresWhitespaceOnlyValue(): void
+    {
+        // Arrange
+        $context = [
+            'argv' => [
+                'bin/console',
+                'some:command',
+                '--tenant_shortname',
+                '   ',
+            ],
+        ];
+        $transformer = new ContextTransformer($context);
+        $method = (new \ReflectionClass($transformer))->getMethod('extractTenantShortnameFromArgv');
+        $method->setAccessible(true);
+
+        // Act
+        $shortname = $method->invoke($transformer);
+
+        // Assert
+        $this->assertNull($shortname);
+    }
+
+    public function testExtractTenantIdFromArgvWhenOptionIsLastArgument(): void
+    {
+        // Arrange
+        $context = [
+            'argv' => [
+                'bin/console',
+                'tenant:database:create',
+                '--tenant_id',
+            ],
+        ];
+        $transformer = new ContextTransformer($context);
+        $method = (new \ReflectionClass($transformer))->getMethod('extractTenantIdFromArgv');
+        $method->setAccessible(true);
+
+        // Act
+        $tenantId = $method->invoke($transformer);
+
+        // Assert
+        $this->assertNull($tenantId);
+    }
+
+    public function testResolvedTenantIdIsCachedAcrossTransformCalls(): void
+    {
+        // Arrange
+        $dataPath = './var/tmp/data/app';
+        $this->ensureTenantDirectory($dataPath, 't1234');
+        $context = [
+            'DATA_PATH' => $dataPath,
+            'DATABASE_URL' => 'sqlite:///var/tmp/data/app/sqlite/data.sqlite',
+            'argv' => [
+                'bin/console',
+                'tenant:database:create',
+                '--tenant_id',
+                't1234',
+            ],
+        ];
+        $transformer = new ContextTransformer($context);
+        $transformer->transformDataPath();
+
+        $context['argv'] = [
+            'bin/console',
+            'tenant:database:create',
+            '--tenant_id',
+            'other-tenant',
+        ];
+
+        // Act
+        $transformer->transformDatabaseUrl();
+
+        // Assert — cached tenant id from first resolution must win
+        $this->assertEnvValue(
+            'DATABASE_URL',
+            'sqlite:///var/tmp/data/app/tenants/t1234/sqlite/data.sqlite'
+        );
+    }
+
     public function testTransformDataPathWithTenantShortnameInArgvResolvesWithoutValidation(): void
     {
         $base = sys_get_temp_dir() . '/mt-ctx-sn-' . uniqid('', true);

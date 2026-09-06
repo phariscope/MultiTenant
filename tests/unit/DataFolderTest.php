@@ -177,6 +177,40 @@ class DataFolderTest extends TestCase
         $this->assertEquals($expectedPath, $actualPath);
     }
 
+    public function testGetApplicationDataRootWithLongTenantId(): void
+    {
+        // Arrange
+        $_ENV['DATA_PATH'] = '/var/lib/my-application/tenants/tenant-with-a-very-long-name';
+        $dataFolder = new DataFolder();
+
+        // Act
+        $root = $dataFolder->getApplicationDataRoot();
+
+        // Assert
+        $this->assertSame('/var/lib/my-application', $root);
+        $this->assertSame(
+            '/var/lib/my-application/tenants/tenants.sqlite',
+            $dataFolder->getDatabaseTenantsFullPath()
+        );
+    }
+
+    public function testGetApplicationDataRootStripsTenantScopedSuffix(): void
+    {
+        // Arrange
+        $_ENV['DATA_PATH'] = '/tmp/app/tenants/campus26';
+        $dataFolder = new DataFolder();
+
+        // Act
+        $root = $dataFolder->getApplicationDataRoot();
+
+        // Assert
+        $this->assertSame('/tmp/app', $root);
+        $this->assertSame(
+            '/tmp/app/tenants/tenants.sqlite',
+            $dataFolder->getDatabaseTenantsFullPath()
+        );
+    }
+
     public function testGetDatabaseTenantsFullPathWhenDataPathIsTenantScoped(): void
     {
         // Arrange — simulates ContextTransformer after --tenant_id

@@ -283,10 +283,151 @@ class TenantShortnameRegistryTest extends TestCase
         $this->expectException(PDOException::class);
 
         // Act
-        $registry->register('tid-second', 'shared-slug');
+        try {
+            $registry->register('tid-second', 'shared-slug');
+        } catch (PDOException $exception) {
+            $this->assertSame('tid-first', $registry->resolveTenantId('shared-slug'));
+            $this->assertNull($registry->resolveShortname('tid-second'));
+            throw $exception;
+        }
+    }
+
+    public function testTryCreateFromEnvPrefersSuperglobalOverGetenv(): void
+    {
+        // Arrange
+        $fromEnv = $this->vfsDataPath('from-env');
+        $fromGetenv = $this->vfsDataPath('from-getenv');
+        $_ENV['DATA_PATH'] = $fromEnv;
+        putenv('DATA_PATH=' . $fromGetenv);
+
+        // Act
+        $registry = TenantShortnameRegistry::tryCreateFromEnv();
 
         // Assert
-        $this->assertSame('tid-first', $registry->resolveTenantId('shared-slug'));
+        $this->assertNotNull($registry);
+        $this->assertStringStartsWith($fromEnv, $registry->getSqliteFilePath());
+    }
+
+    public function testResolveShortnameTrimsTenantId(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $registry->register('tid-abc', 'my-brand');
+
+        // Act
+        $shortname = $registry->resolveShortname('  tid-abc  ');
+
+        // Assert
+        $this->assertSame('my-brand', $shortname);
+    }
+
+    public function testRegisterAllowsExactlyMaxLengthShortname(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $slug = str_repeat('a', 63);
+
+        // Act
+        $registry->register('tid-max', $slug);
+
+        // Assert
+        $this->assertSame('tid-max', $registry->resolveTenantId($slug));
+    }
+
+    public function testRegisterAllowsSingleCharacterShortname(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+
+        // Act
+        $registry->register('tid-one', 'a');
+
+        // Assert
+        $this->assertSame('tid-one', $registry->resolveTenantId('a'));
+    }
+
+    public function testRegisterAllowsTenantIdSuffixPatternWithSpecialRegexCharacters(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $tenantId = 'Acme.Corp+1';
+        $suffixSlug = 'acme.corp+1-2';
+
+        // Act
+        $registry->register($tenantId, $suffixSlug);
+
+        // Assert
+        $this->assertSame($tenantId, $registry->resolveTenantId($suffixSlug));
+    }
+
+    public function testRegisterUniqueTruncatesLongBaseBeforeSuffix(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $longBase = str_repeat('b', 63);
+        $registry->register('tid-first', $longBase);
+
+        // Act
+        $allocated = $registry->registerUniqueShortname('tid-second', $longBase);
+
+        // Assert
+        $this->assertLessThanOrEqual(63, strlen($allocated));
+        $this->assertSame('tid-second', $registry->resolveTenantId($allocated));
+        $this->assertMatchesRegularExpression('/^b+-2$/', $allocated);
+        $this->assertSame(63, strlen($allocated));
+    }
+
+    public function testResolveTenantIdReturnsNullForEmptyShortnameWithoutOpeningDatabase(): void
+    {
+        // Arrange — invalid path would throw if getPdo() were reached
+        $registry = new TenantShortnameRegistry('/totally/invalid/registry/path/tenants.sqlite');
+
+        // Act
+        $resolved = $registry->resolveTenantId('   ');
+
+        // Assert
+        $this->assertNull($resolved);
+    }
+
+    public function testResolveShortnameReturnsNullForEmptyTenantIdWithoutOpeningDatabase(): void
+    {
+        // Arrange
+        $registry = new TenantShortnameRegistry('/totally/invalid/registry/path/tenants.sqlite');
+
+        // Act
+        $shortname = $registry->resolveShortname('   ');
+
+        // Assert
+        $this->assertNull($shortname);
+    }
+
+    public function testRegisterUniqueStripsTrailingHyphenAfterTruncatingBase(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $base = str_repeat('a', 60) . '-x';
+        $registry->register('tid-first', $base);
+
+        // Act
+        $allocated = $registry->registerUniqueShortname('tid-second', $base);
+
+        // Assert
+        $this->assertSame(str_repeat('a', 60) . '-2', $allocated);
+        $this->assertSame('tid-second', $registry->resolveTenantId($allocated));
+    }
+
+    public function testRegisterAllowsTenantIdSuffixPatternCaseInsensitively(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $tenantId = 'Tenant-ABC';
+        $suffixSlug = 'tenant-abc-3';
+
+        // Act
+        $registry->register($tenantId, $suffixSlug);
+
+        // Assert
+        $this->assertSame($tenantId, $registry->resolveTenantId($suffixSlug));
     }
 
     public function testRegisterUniqueAllocatesSuffixOnCollision(): void

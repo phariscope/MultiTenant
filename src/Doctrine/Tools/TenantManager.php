@@ -18,7 +18,7 @@ class TenantManager
     private array $session;
 
     /**
-     * @param array<string, mixed>|null $session
+     * @param array<int|string, mixed>|null $session
      */
     public function __construct(
         ?Request $request = null,
@@ -39,7 +39,7 @@ class TenantManager
                 $this->session = [];
             }
         } else {
-            $this->session = $session;
+            $this->session = self::stringKeyedArray($session);
         }
     }
 

@@ -35,6 +35,8 @@ class TenantRepositoryTest extends TestCase
 
         // Assert
         $this->assertFileExists(FakeEntityManagerFactory::sqliteDatabaseAbsolutePath());
+        $tables = $em->getConnection()->createSchemaManager()->listTableNames();
+        $this->assertContains('entities', $tables);
 
         // Clean up tenant folder
         $fs = new Filesystem();

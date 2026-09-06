@@ -135,6 +135,23 @@ class PathTransformerTest extends TestCase
         $this->assertEquals($expectedPath, $result);
     }
 
+    public function testTransformWithRelativeDataPathFromEnvIgnoresParentSegments(): void
+    {
+        // Arrange — DATA_PATH from env must not apply ../ parent stripping
+        $tenantId = 'tenant123';
+        $_ENV['DATA_PATH'] = '../data/myApp';
+
+        $initialPath = '/var/myApp/data/myApp/database/myApp.sqlite';
+        $expectedPath = '/var/myApp/data/myApp/tenants/tenant123/database/myApp.sqlite';
+
+        // Act
+        $sut = new PathTransformer();
+        $result = $sut->transform($initialPath, $tenantId);
+
+        // Assert
+        $this->assertEquals($expectedPath, $result);
+    }
+
     public function testUndefinedDataPathException(): void
     {
         $this->expectException(DataPathException::class);

@@ -80,12 +80,13 @@ class CreateTenantDatabaseCommandTest extends TestCase
         touch($tenantDbPath);
 
         // Act
-        $this->commandTester->execute([
+        $exitCode = $this->commandTester->execute([
             '--tenant_id' => $tenantId,
             '--verbose' => 2,
         ]);
 
         // Assert
+        $this->assertSame(1, $exitCode);
         $output = $this->commandTester->getDisplay();
         $this->assertStringStartsWith('Could not create database for tenant "' . $tenantId . '"', $output);
 
