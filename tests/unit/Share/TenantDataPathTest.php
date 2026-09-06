@@ -57,11 +57,9 @@ class TenantDataPathTest extends TestCase
         unset($_ENV['DATA_PATH']);
         $this->expectException(DataPathException::class);
         $this->expectExceptionMessage('DATA_PATH environment variable is not set');
-        $sut = new TenantDataPath();
 
         try {
-            // Act
-            $sut->getTenantDataPath('tenant123');
+            new TenantDataPath();
         } finally {
             if ($savedEnvDataPath !== null) {
                 $_ENV['DATA_PATH'] = $savedEnvDataPath;

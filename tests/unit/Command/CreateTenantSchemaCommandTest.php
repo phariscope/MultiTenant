@@ -98,11 +98,12 @@ class CreateTenantSchemaCommandTest extends TestCase
         ]);
 
         // Act
-        $this->commandTester->execute([
+        $exitCode = $this->commandTester->execute([
             '--tenant_id' => $tenantId,
         ]);
 
         // Assert
+        $this->assertSame(1, $exitCode);
         $this->assertConsoleFailureOutput($tenantId);
     }
 

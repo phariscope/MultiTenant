@@ -22,7 +22,7 @@ final class TenantConsoleOptionResolver
             throw new InvalidArgumentException('Provide --tenant_id.');
         }
 
-        if ($tenantIdString === '' && $shortnameString !== '') {
+        if ($tenantIdString === '') {
             throw new InvalidArgumentException('--tenant_shortname requires --tenant_id.');
         }
 

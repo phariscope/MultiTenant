@@ -18,7 +18,7 @@ class TenantManager
     private array $session;
 
     /**
-     * @param array<string, mixed>|null $session
+     * @param array<int|string, mixed>|null $session
      */
     public function __construct(
         ?Request $request = null,
@@ -34,13 +34,29 @@ class TenantManager
 
         if ($session === null) {
             if (session_status() === PHP_SESSION_ACTIVE) {
-                $this->session = $_SESSION;
+                $this->session = self::stringKeyedArray($_SESSION);
             } else {
                 $this->session = [];
             }
         } else {
-            $this->session = $session;
+            $this->session = self::stringKeyedArray($session);
         }
+    }
+
+    /**
+     * @param array<mixed> $array
+     * @return array<string, mixed>
+     */
+    private static function stringKeyedArray(array $array): array
+    {
+        $result = [];
+        foreach ($array as $key => $value) {
+            if (is_string($key)) {
+                $result[$key] = $value;
+            }
+        }
+
+        return $result;
     }
 
     public function getCurrentTenantId(): ?string

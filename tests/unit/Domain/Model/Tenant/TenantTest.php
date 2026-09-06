@@ -18,7 +18,7 @@ class TenantTest extends TestCase
 
         // Assert
         $this->assertInstanceOf(Tenant::class, $tenant);
-        $this->assertIsString($tenant->getTenantId());
+        $this->assertNotSame('', $tenant->getTenantId());
         $this->assertEquals('', $tenant->getName());
         $this->assertEquals('', $tenant->getUserEmail());
     }
@@ -33,7 +33,7 @@ class TenantTest extends TestCase
 
         // Assert
         $this->assertInstanceOf(Tenant::class, $tenant);
-        $this->assertIsString($tenant->getTenantId());
+        $this->assertNotSame('', $tenant->getTenantId());
         $this->assertEquals('Campus26', $tenant->getName());
         $this->assertEquals('user@campus26.com', $tenant->getUserEmail());
     }

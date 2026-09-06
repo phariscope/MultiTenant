@@ -13,7 +13,7 @@ class PathTransformerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        if (isset($_ENV['DATA_PATH'])) {
+        if (isset($_ENV['DATA_PATH']) && is_string($_ENV['DATA_PATH'])) {
             $this->savedEnvDataPath = $_ENV['DATA_PATH'];
         }
     }
@@ -129,6 +129,23 @@ class PathTransformerTest extends TestCase
 
         // Act
         $sut = new PathTransformer($dataPath);
+        $result = $sut->transform($initialPath, $tenantId);
+
+        // Assert
+        $this->assertEquals($expectedPath, $result);
+    }
+
+    public function testTransformWithRelativeDataPathFromEnvIgnoresParentSegments(): void
+    {
+        // Arrange — DATA_PATH from env must not apply ../ parent stripping
+        $tenantId = 'tenant123';
+        $_ENV['DATA_PATH'] = '../data/myApp';
+
+        $initialPath = '/var/myApp/data/myApp/database/myApp.sqlite';
+        $expectedPath = '/var/myApp/data/myApp/tenants/tenant123/database/myApp.sqlite';
+
+        // Act
+        $sut = new PathTransformer();
         $result = $sut->transform($initialPath, $tenantId);
 
         // Assert

@@ -33,7 +33,7 @@ class TenantEntityManagerFactoryTest extends TestCase
         $params = $result->getConnection()->getParams();
 
         // Assert
-        $this->assertEquals(true, $result instanceof EntityManager);
+        $this->assertInstanceOf(EntityManager::class, $result);
         $this->assertStringEndsWith(
             'tenants/tenant123/subfolder/database.sqlite',
             strval($this->getParam($params, 'path'))
@@ -64,7 +64,7 @@ class TenantEntityManagerFactoryTest extends TestCase
         $params = $result->getConnection()->getParams();
 
         // Assert
-        $this->assertEquals(true, $result instanceof EntityManager);
+        $this->assertInstanceOf(EntityManager::class, $result);
         $this->assertEquals('mydbname_tenant123', $this->getParam($params, 'dbname'));
         $this->assertEquals('pdo_mysql', $this->getParam($params, 'driver'));
         $this->assertEquals('root', $this->getParam($params, 'user'));

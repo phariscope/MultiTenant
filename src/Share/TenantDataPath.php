@@ -12,7 +12,8 @@ class TenantDataPath
         if ($dataPath === null && !isset($_ENV['DATA_PATH'])) {
             throw new DataPathException('DATA_PATH environment variable is not set');
         }
-        $this->dataPath = $dataPath ?? ($_ENV['DATA_PATH'] ?? '');
+        $envDataPath = $_ENV['DATA_PATH'] ?? '';
+        $this->dataPath = $dataPath ?? (is_string($envDataPath) ? $envDataPath : '');
         $this->tenantId = $tenantId;
     }
 

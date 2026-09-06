@@ -166,16 +166,16 @@ MSG;
         // Arrange
         $driverException = PdoDriverException::new(new \PDOException('Connection refused'));
 
-        $schemaManager = $this->createMock(AbstractSchemaManager::class);
+        $schemaManager = $this->createStub(AbstractSchemaManager::class);
         $schemaManager->method('listDatabases')
             ->willThrowException(new ConnectionException($driverException, null));
 
-        $connection = $this->createMock(Connection::class);
+        $connection = $this->createStub(Connection::class);
         $connection->method('getDatabasePlatform')->willReturn(new MySQLPlatform());
         $connection->method('getParams')->willReturn(['dbname' => 'test']);
         $connection->method('createSchemaManager')->willReturn($schemaManager);
 
-        $em = $this->createMock(EntityManagerInterface::class);
+        $em = $this->createStub(EntityManagerInterface::class);
         $em->method('getConnection')->willReturn($connection);
         $sut = new DatabaseTools();
 
@@ -189,15 +189,15 @@ MSG;
     public function testDatabaseExistsReturnsTrueForNonSqliteWhenConnectionWorks(): void
     {
         // Arrange
-        $schemaManager = $this->createMock(AbstractSchemaManager::class);
+        $schemaManager = $this->createStub(AbstractSchemaManager::class);
         $schemaManager->method('listDatabases')->willReturn(['mydbname']);
 
-        $connection = $this->createMock(Connection::class);
+        $connection = $this->createStub(Connection::class);
         $connection->method('getDatabasePlatform')->willReturn(new MySQLPlatform());
         $connection->method('getParams')->willReturn(['dbname' => 'mydbname']);
         $connection->method('createSchemaManager')->willReturn($schemaManager);
 
-        $em = $this->createMock(EntityManagerInterface::class);
+        $em = $this->createStub(EntityManagerInterface::class);
         $em->method('getConnection')->willReturn($connection);
         $sut = new DatabaseTools();
 

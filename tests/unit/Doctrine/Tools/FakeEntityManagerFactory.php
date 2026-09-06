@@ -97,6 +97,7 @@ class FakeEntityManagerFactory
      */
     public function isMariaDbReachable(): bool
     {
+        /** @var bool|null $reachable */
         static $reachable = null;
         if ($reachable !== null) {
             return $reachable;

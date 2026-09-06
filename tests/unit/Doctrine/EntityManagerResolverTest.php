@@ -29,7 +29,7 @@ class EntityManagerResolverTest extends TestCase
             unset($_REQUEST['tenant_id']);
         }
 
-        if (isset($_ENV['DATA_PATH'])) {
+        if (isset($_ENV['DATA_PATH']) && is_string($_ENV['DATA_PATH'])) {
             $this->savedEnvDataPath = $_ENV['DATA_PATH'];
         }
         $_ENV['DATA_PATH'] = FakeEntityManagerFactory::projectRoot() . FakeEntityManagerFactory::DATA_PATH;
@@ -98,7 +98,8 @@ class EntityManagerResolverTest extends TestCase
     public function testGetEntityManagerByRequest(): void
     {
         // Arrange
-        $this->ensureTenantDirectory($_ENV['DATA_PATH'], 'tenant123');
+        $applicationDataPath = $_ENV['DATA_PATH'] ?? '';
+        $this->ensureTenantDirectory(is_string($applicationDataPath) ? $applicationDataPath : '', 'tenant123');
         $request = new Request(['tenant_id' => 'tenant123']);
         $em = (new FakeEntityManagerFactory())->createSqliteEntityManager();
         $sut = new EntityManagerResolver($em);

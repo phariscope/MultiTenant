@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Phariscope\MultiTenant\Command;
 
-use InvalidArgumentException;
 use Phariscope\MultiTenant\Application\Service\Tenant\DeleteTenant\DeleteTenantService;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -36,7 +35,7 @@ class DeleteTenantCommand extends Command
 
         try {
             (new DeleteTenantService())->execute($tenantId);
-        } catch (InvalidArgumentException | Throwable $e) {
+        } catch (Throwable $e) {
             $output->writeln('<error>' . $e->getMessage() . '</error>');
 
             return Command::FAILURE;
