@@ -138,6 +138,36 @@ Apply the changes:
 bin/console tenant:schema:update --tenant_id tenantID1234 --force
 ```
 
+> **Production:** prefer versioned migrations (`tenant:migrations:*`) over `tenant:schema:update --force`.
+
+# Tenant migrations (Doctrine Migrations)
+
+Host applications must install `doctrine/doctrine-migrations-bundle`. Commands delegate to `doctrine:migrations:*` with `--tenant_id` (same `ContextTransformer` as other `tenant:*` commands).
+
+**New tenant** (after `tenant:schema:create`):
+
+```bash
+bin/console tenant:migrations:sync --tenant_id tenantID1234
+```
+
+Marks all migration versions as executed without replaying SQL (schema already matches current mapping).
+
+**Existing tenant** (schema evolution in production):
+
+```bash
+bin/console tenant:migrations:migrate --tenant_id tenantID1234
+bin/console tenant:migrations:status --tenant_id tenantID1234
+```
+
+**All registered tenants** (from `tenants/tenants.sqlite`):
+
+```bash
+bin/console tenant:migrations:migrate-all
+bin/console tenant:migrations:migrate-all --dry-run
+```
+
+`tenant:migrations:sync` refuses to run when `doctrine_migration_versions` already has rows unless `--force` is passed (recovery only).
+
 # Tenant shortname (`tenant_shortname`)
 
 Applications can expose a **human-friendly** hostname or path segment (`tenant_shortname`) instead of the canonical `tenant_id`. Resolution uses a small SQLite registry stored next to tenant data:

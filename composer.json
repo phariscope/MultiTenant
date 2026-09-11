@@ -1,5 +1,6 @@
 {
     "name": "phariscope/multitenant",
+    "version": "0.0.27",
     "type": "symfony-bundle",
     "description": "Multitenant components.",
     "keywords": ["tenant", "multitenant", "multi-tenant"],
@@ -18,6 +19,7 @@
         "ext-pdo": "*",
         "symfony/orm-pack": "^2.4 || ^5.4 || ^6.0 || ^7.0 || ^8.0",
         "phariscope/safephp": "^1.0",
+        "symfony/process": "^5.4 || ^6.0 || ^7.0 || ^8.0",
         "symfony/dotenv": "^5.4 || ^6.0 || ^7.0 || ^8.0",
         "symfony/yaml": "^5.4 || ^6.0 || ^7.0 || ^8.0",
         "symfony/runtime": "^5.4 || ^6.0 || ^7.0 || ^8.0",
