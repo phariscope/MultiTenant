@@ -1,5 +1,6 @@
 {
     "name": "phariscope/multitenant",
+    "version": "0.0.27",
     "type": "symfony-bundle",
     "description": "Multitenant components.",
     "keywords": ["tenant", "multitenant", "multi-tenant"],
