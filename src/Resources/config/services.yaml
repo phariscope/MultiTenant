@@ -14,7 +14,41 @@ services:
         autowire: true
         autoconfigure: true
 
+    Phariscope\MultiTenant\Command\DeleteTenantCommand:
+        tags: ['console.command']
+        autowire: true
+        autoconfigure: true
+
     Phariscope\MultiTenant\Command\ShowTenantShortnameCommand:
+        tags: ['console.command']
+        autowire: true
+        autoconfigure: true
+
+    Phariscope\MultiTenant\Command\TenantConsoleProcessRunner:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    Phariscope\MultiTenant\Command\TenantConsoleProcessRunnerInterface:
+        alias: Phariscope\MultiTenant\Command\TenantConsoleProcessRunner
+
+    Phariscope\MultiTenant\Command\Migrations\TenantMigrationDatabaseInspector: ~
+
+    Phariscope\MultiTenant\Command\Migrations\MigrateTenantMigrationsCommand:
+        tags: ['console.command']
+        autowire: true
+        autoconfigure: true
+
+    Phariscope\MultiTenant\Command\Migrations\StatusTenantMigrationsCommand:
+        tags: ['console.command']
+        autowire: true
+        autoconfigure: true
+
+    Phariscope\MultiTenant\Command\Migrations\SyncTenantMigrationsCommand:
+        tags: ['console.command']
+        autowire: true
+        autoconfigure: true
+
+    Phariscope\MultiTenant\Command\Migrations\MigrateAllTenantMigrationsCommand:
         tags: ['console.command']
         autowire: true
         autoconfigure: true

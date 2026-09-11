@@ -45,6 +45,20 @@ class TenantShortnameRegistryTest extends TestCase
         $this->assertSame('tid-abc', $resolved);
     }
 
+    public function testListRegisteredTenantIdsReturnsSortedIds(): void
+    {
+        // Arrange
+        $registry = $this->registryInMemory();
+        $registry->register('tenant-z', 'tenant-z');
+        $registry->register('tenant-a', 'tenant-a');
+
+        // Act
+        $tenantIds = $registry->listRegisteredTenantIds();
+
+        // Assert
+        $this->assertSame(['tenant-a', 'tenant-z'], $tenantIds);
+    }
+
     public function testRegisterReplacesShortnameForSameTenant(): void
     {
         // Arrange
