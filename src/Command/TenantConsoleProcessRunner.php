@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Phariscope\MultiTenant\Command;
 
+use Phariscope\MultiTenant\DataFolder;
 use Symfony\Component\Process\Process;
 
 final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInterface
@@ -36,7 +37,11 @@ final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInte
      */
     public function run(string $commandName, array $parameters = []): TenantConsoleProcessResult
     {
-        $process = new Process($this->buildCommand($commandName, $parameters), $this->projectDir);
+        $process = new Process(
+            $this->buildCommand($commandName, $parameters),
+            $this->projectDir,
+            $this->unscopedTenantEnvironment(),
+        );
         $process->setTimeout(null);
         $process->run();
 
@@ -72,7 +77,7 @@ final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInte
                 continue;
             }
 
-            if ($value === false || $value === null) {
+            if ($value === false || $value === null || !is_scalar($value)) {
                 continue;
             }
 
@@ -81,5 +86,53 @@ final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInte
         }
 
         return $argv;
+    }
+
+    /**
+     * Nested `bin/console` must start from the application DATA_PATH / DATABASE_URL,
+     * not values already rewritten by the parent ContextTransformer.
+     *
+     * @return array<string, string>
+     */
+    private function unscopedTenantEnvironment(): array
+    {
+        $dataFolder = new DataFolder();
+        $applicationRoot = $dataFolder->getApplicationDataRoot();
+        $currentDataPath = $dataFolder->getDataRootFolder();
+
+        $env = [];
+        if ($applicationRoot !== '') {
+            $env['DATA_PATH'] = $applicationRoot;
+        }
+
+        $databaseUrl = $_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL');
+        if (!is_string($databaseUrl) || $databaseUrl === '') {
+            return $env;
+        }
+
+        $env['DATABASE_URL'] = $this->unscopedSqliteDatabaseUrl(
+            $databaseUrl,
+            $currentDataPath,
+            $applicationRoot,
+        );
+
+        return $env;
+    }
+
+    private function unscopedSqliteDatabaseUrl(
+        string $databaseUrl,
+        string $currentDataPath,
+        string $applicationRoot,
+    ): string {
+        if (
+            $applicationRoot === ''
+            || $currentDataPath === ''
+            || $currentDataPath === $applicationRoot
+            || !str_contains($databaseUrl, $currentDataPath)
+        ) {
+            return $databaseUrl;
+        }
+
+        return str_replace($currentDataPath, $applicationRoot, $databaseUrl);
     }
 }
