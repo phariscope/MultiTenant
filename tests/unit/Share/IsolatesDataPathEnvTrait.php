@@ -21,6 +21,15 @@ trait IsolatesDataPathEnvTrait
         $this->setDataPathEnv($this->isolatedDataPathDir);
     }
 
+    protected function getIsolatedDataPathDir(): string
+    {
+        if ($this->isolatedDataPathDir === null) {
+            throw new \LogicException('Call setUpIsolatedWritableDataPath() first.');
+        }
+
+        return $this->isolatedDataPathDir;
+    }
+
     protected function tearDownIsolatedDataPath(): void
     {
         if ($this->savedDataPathState !== null) {

@@ -161,6 +161,35 @@ final class TenantShortnameRegistry
     }
 
     /**
+     * @return list<string>
+     */
+    public function listRegisteredTenantIds(): array
+    {
+        try {
+            $stmt = $this->getPdo()->query(
+                'SELECT tenant_id FROM tenant_shortname_map ORDER BY tenant_id'
+            );
+            if ($stmt === false) {
+                return [];
+            }
+
+            /** @var list<string> $tenantIds */
+            $tenantIds = [];
+            while (($row = $stmt->fetch(PDO::FETCH_ASSOC)) !== false) {
+                if (!is_array($row) || !isset($row['tenant_id']) || !is_string($row['tenant_id'])) {
+                    continue;
+                }
+
+                $tenantIds[] = $row['tenant_id'];
+            }
+
+            return $tenantIds;
+        } catch (PDOException) {
+            return [];
+        }
+    }
+
+    /**
      * Registers a shortname for the tenant, allocating a unique variant when the desired slug is taken.
      * Tries the base slug first, then {@code base-2}, {@code base-3}, etc.
      *
