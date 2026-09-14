@@ -52,6 +52,8 @@ class ContextTransformer
         $shortname = $this->extractTenantShortnameFromArgv();
 
         if ($tenantId !== null || $shortname !== null) {
+            $this->stripTenantOptionsFromArgvIfDoctrineCommand();
+
             if ($this->initialDataPath === null) {
                 if ($shortname !== null) {
                     throw TenantException::cannotResolveShortname($shortname);
@@ -145,6 +147,76 @@ class ContextTransformer
         }
 
         return null;
+    }
+
+    private function stripTenantOptionsFromArgvIfDoctrineCommand(): void
+    {
+        if (!isset($this->context['argv']) || !is_array($this->context['argv'])) {
+            return;
+        }
+
+        $commandName = $this->consoleCommandNameFromArgv($this->context['argv']);
+        if ($commandName === null || !str_starts_with($commandName, 'doctrine:')) {
+            return;
+        }
+
+        $filtered = $this->filterTenantOptionsFromArgv($this->context['argv']);
+        $this->context['argv'] = $filtered;
+
+        if (isset($_SERVER['argv']) && is_array($_SERVER['argv'])) {
+            $_SERVER['argv'] = $this->filterTenantOptionsFromArgv($_SERVER['argv']);
+            $_SERVER['argc'] = count($_SERVER['argv']);
+        }
+    }
+
+    /**
+     * @param array<int|string, mixed> $argv
+     */
+    private function consoleCommandNameFromArgv(array $argv): ?string
+    {
+        foreach ($argv as $arg) {
+            if (is_string($arg) && str_contains($arg, ':') && !str_starts_with($arg, '-')) {
+                return $arg;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<int|string, mixed> $argv
+     *
+     * @return list<mixed>
+     */
+    private function filterTenantOptionsFromArgv(array $argv): array
+    {
+        $filtered = [];
+        $skipNext = false;
+
+        foreach ($argv as $arg) {
+            if ($skipNext) {
+                $skipNext = false;
+                continue;
+            }
+
+            if (!is_string($arg)) {
+                $filtered[] = $arg;
+                continue;
+            }
+
+            if ($arg === '--tenant_id' || $arg === '--tenant_shortname') {
+                $skipNext = true;
+                continue;
+            }
+
+            if (str_starts_with($arg, '--tenant_id=') || str_starts_with($arg, '--tenant_shortname=')) {
+                continue;
+            }
+
+            $filtered[] = $arg;
+        }
+
+        return array_values($filtered);
     }
 
     public function transformDatabaseUrl(): void

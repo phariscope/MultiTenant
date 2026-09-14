@@ -27,7 +27,8 @@ final class TenantConsoleProcessRunnerTest extends TestCase
                 '/app/bin/console',
                 'doctrine:migrations:migrate',
                 '--no-interaction',
-                '--tenant_id=tenant-abc',
+                '--tenant_id',
+                'tenant-abc',
             ],
             $command
         );
@@ -49,7 +50,8 @@ final class TenantConsoleProcessRunnerTest extends TestCase
                 'php',
                 '/app/bin/console',
                 'tenant:migrations:migrate',
-                '--tenant_id=cl_demo10_yve5d6q',
+                '--tenant_id',
+                'cl_demo10_yve5d6q',
             ],
             $command
         );

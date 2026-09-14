@@ -16,6 +16,9 @@ class ContextTransformerTest extends TestCase
     private ?string $originalDatabaseUrl;
     private ?string $originalDataPath;
     private ?string $originalHttpTenantId;
+    /** @var mixed */
+    private $originalServerArgv;
+
     protected function setUp(): void
     {
         // sauvegarde les variables d'environnement
@@ -25,6 +28,7 @@ class ContextTransformerTest extends TestCase
         $this->originalDataPath = is_string($dataPath) ? $dataPath : null;
         $httpTenantId = $_SERVER['HTTP_X_TENANT_ID'] ?? null;
         $this->originalHttpTenantId = is_string($httpTenantId) ? $httpTenantId : null;
+        $this->originalServerArgv = $_SERVER['argv'] ?? null;
     }
 
     protected function tearDown(): void
@@ -43,6 +47,11 @@ class ContextTransformerTest extends TestCase
             $_SERVER['HTTP_X_TENANT_ID'] = $this->originalHttpTenantId;
         } else {
             unset($_SERVER['HTTP_X_TENANT_ID']);
+        }
+        if ($this->originalServerArgv === null) {
+            unset($_SERVER['argv']);
+        } else {
+            $_SERVER['argv'] = $this->originalServerArgv;
         }
     }
 
@@ -96,6 +105,98 @@ class ContextTransformerTest extends TestCase
 
         // Assert
         $this->assertEnvValue('DATA_PATH', './var/tmp/data/app/tenants/t1234');
+    }
+
+    public function testTransformStripsTenantIdFromArgvForDoctrineCommands(): void
+    {
+        // Arrange
+        $dataPath = './var/tmp/data/app';
+        $this->ensureTenantDirectory($dataPath, 't1234');
+        $context = [
+            'DATA_PATH' => $dataPath,
+            'argv' => [
+                'bin/console',
+                'doctrine:migrations:migrate',
+                '--no-interaction',
+                '--tenant_id',
+                't1234',
+            ],
+        ];
+        $_SERVER['argv'] = $context['argv'];
+
+        // Act
+        $transformer = new ContextTransformer($context);
+        $transformer->transformDataPath();
+
+        // Assert
+        $expected = [
+            'bin/console',
+            'doctrine:migrations:migrate',
+            '--no-interaction',
+        ];
+        $this->assertSame($expected, $context['argv']);
+        $this->assertSame($expected, $_SERVER['argv']);
+        $this->assertEnvValue('DATA_PATH', './var/tmp/data/app/tenants/t1234');
+    }
+
+    public function testTransformStripsTenantIdEqualsFormFromArgvForDoctrineCommands(): void
+    {
+        // Arrange
+        $dataPath = './var/tmp/data/app';
+        $this->ensureTenantDirectory($dataPath, 't1234');
+        $context = [
+            'DATA_PATH' => $dataPath,
+            'argv' => [
+                'bin/console',
+                'doctrine:migrations:status',
+                '--tenant_id=t1234',
+            ],
+        ];
+        $_SERVER['argv'] = $context['argv'];
+
+        // Act
+        $transformer = new ContextTransformer($context);
+        $transformer->transformDataPath();
+
+        // Assert
+        $this->assertSame(
+            [
+                'bin/console',
+                'doctrine:migrations:status',
+            ],
+            $context['argv']
+        );
+    }
+
+    public function testTransformKeepsTenantIdOnArgvForTenantCommands(): void
+    {
+        // Arrange
+        $dataPath = './var/tmp/data/app';
+        $this->ensureTenantDirectory($dataPath, 't1234');
+        $context = [
+            'DATA_PATH' => $dataPath,
+            'argv' => [
+                'bin/console',
+                'tenant:migrations:migrate',
+                '--tenant_id',
+                't1234',
+            ],
+        ];
+
+        // Act
+        $transformer = new ContextTransformer($context);
+        $transformer->transformDataPath();
+
+        // Assert
+        $this->assertSame(
+            [
+                'bin/console',
+                'tenant:migrations:migrate',
+                '--tenant_id',
+                't1234',
+            ],
+            $context['argv']
+        );
     }
 
     public function testTransformDataPathWithoutTenantId(): void

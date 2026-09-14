@@ -84,6 +84,7 @@ final class SyncTenantMigrationsCommand extends Command
             'add' => true,
             'all' => true,
             'no-interaction' => true,
+            'tenant_id' => $tenantId,
         ]);
 
         if ($result->output !== '') {

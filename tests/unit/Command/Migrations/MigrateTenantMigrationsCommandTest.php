@@ -59,7 +59,10 @@ final class MigrateTenantMigrationsCommandTest extends TestCase
             [
                 [
                     'command' => 'doctrine:migrations:migrate',
-                    'parameters' => ['no-interaction' => true],
+                    'parameters' => [
+                        'no-interaction' => true,
+                        'tenant_id' => 'tenant-abc',
+                    ],
                 ],
             ],
             $runner->calls

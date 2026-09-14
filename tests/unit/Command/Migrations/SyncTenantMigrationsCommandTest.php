@@ -63,6 +63,7 @@ final class SyncTenantMigrationsCommandTest extends TestCase
                         'add' => true,
                         'all' => true,
                         'no-interaction' => true,
+                        'tenant_id' => 'tenant-abc',
                     ],
                 ],
             ],

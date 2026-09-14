@@ -58,6 +58,7 @@ final class MigrateTenantMigrationsCommand extends Command
 
         $result = $this->processRunner->run('doctrine:migrations:migrate', [
             'no-interaction' => true,
+            'tenant_id' => $tenantId,
         ]);
 
         if ($result->output !== '') {

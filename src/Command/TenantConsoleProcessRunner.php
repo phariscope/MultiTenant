@@ -76,7 +76,8 @@ final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInte
                 continue;
             }
 
-            $argv[] = '--' . $optionName . '=' . (string) $value;
+            $argv[] = '--' . $optionName;
+            $argv[] = (string) $value;
         }
 
         return $argv;
