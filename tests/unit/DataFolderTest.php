@@ -99,6 +99,23 @@ class DataFolderTest extends TestCase
         $this->assertEquals($expectedPath, $actualPath);
     }
 
+    public function testGetTenantDatabasePathFromAbsoluteSqliteUrl(): void
+    {
+        // Arrange
+        $_ENV['DATA_PATH'] = '/var/captain-learning/data';
+        $_ENV['DATABASE_URL'] = 'sqlite:////var/captain-learning/data/database/captain-learning.sqlite';
+        $dataFolder = new DataFolder();
+
+        // Act
+        $actualPath = $dataFolder->getTenantDatabasePath('cl_demo10_yve5d6q');
+
+        // Assert
+        $this->assertSame(
+            '/var/captain-learning/data/tenants/cl_demo10_yve5d6q/database/captain-learning.sqlite',
+            $actualPath
+        );
+    }
+
     public function testGetTenantDatabasePathWithComplexDatabaseUrl(): void
     {
         // Arrange

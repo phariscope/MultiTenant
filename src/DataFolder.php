@@ -31,19 +31,49 @@ class DataFolder implements DataFolderPathInterface
 
     public function getTenantDatabasePath(string $tenantId): string
     {
-        // Extraire le chemin relatif complet depuis DATABASE_URL
         $databaseUrl = $_ENV[self::DATABASE_URL_NAME] ?? '';
         if (!is_string($databaseUrl)) {
             $databaseUrl = '';
         }
 
-        // Gérer le format sqlite:///%DATA_PATH%/[chemin_relatif]
         if (preg_match('/sqlite:\/\/\/.*%' . self::DATA_PATH_NAME . '%\/(.+)$/', $databaseUrl, $matches)) {
             $relativePath = $matches[1];
+
+            return sprintf("%s/%s", $this->getTenantDataFolder($tenantId), $relativePath);
+        }
+
+        $relativePath = $this->extractRelativePathFromAbsoluteSqliteUrl($databaseUrl);
+        if ($relativePath !== null) {
             return sprintf("%s/%s", $this->getTenantDataFolder($tenantId), $relativePath);
         }
 
         throw new \InvalidArgumentException("DATABASE_URL '$databaseUrl' is not a valid SQLite URL");
+    }
+
+    private function extractRelativePathFromAbsoluteSqliteUrl(string $databaseUrl): ?string
+    {
+        if (!str_starts_with($databaseUrl, 'sqlite:')) {
+            return null;
+        }
+
+        $dataRoot = rtrim(str_replace('\\', '/', $this->getDataRootFolder()), '/');
+        if ($dataRoot === '') {
+            return null;
+        }
+
+        if (preg_match('#^sqlite:(?://)?(?P<path>/.*)$#', $databaseUrl, $matches) !== 1) {
+            return null;
+        }
+
+        $filePath = '/' . ltrim(str_replace('\\', '/', $matches['path']), '/');
+        $prefix = $dataRoot . '/';
+        if (!str_starts_with($filePath, $prefix)) {
+            return null;
+        }
+
+        $relativePath = substr($filePath, strlen($prefix));
+
+        return $relativePath !== '' ? $relativePath : null;
     }
 
     public function getDatabaseTenantsFullPath(): string

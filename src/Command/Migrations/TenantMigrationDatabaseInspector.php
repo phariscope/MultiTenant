@@ -11,20 +11,35 @@ class TenantMigrationDatabaseInspector
 {
     public function resolveTenantDatabasePath(string $tenantId): string
     {
-        $originalDataPath = $_ENV['DATA_PATH'] ?? null;
         $dataFolder = new DataFolder();
-        $applicationRoot = $dataFolder->getApplicationDataRoot();
-        $_ENV['DATA_PATH'] = $applicationRoot;
-
-        try {
-            return (new DataFolder())->getTenantDatabasePath($tenantId);
-        } finally {
-            if ($originalDataPath !== null) {
-                $_ENV['DATA_PATH'] = $originalDataPath;
-            } else {
-                unset($_ENV['DATA_PATH']);
-            }
+        $directory = $dataFolder->getAbsoluteTenantDataFolder($tenantId) . '/database';
+        $fileName = $this->sqliteFileNameFromDatabaseUrl();
+        $candidate = $directory . '/' . $fileName;
+        if (is_file($candidate)) {
+            return $candidate;
         }
+
+        $matches = glob($directory . '/*.sqlite');
+        if (is_array($matches) && $matches !== []) {
+            return $matches[0];
+        }
+
+        return $candidate;
+    }
+
+    private function sqliteFileNameFromDatabaseUrl(): string
+    {
+        $databaseUrl = $_ENV['DATABASE_URL'] ?? '';
+        if (!is_string($databaseUrl) || $databaseUrl === '') {
+            return 'database.sqlite';
+        }
+
+        $fileName = basename(str_replace('\\', '/', $databaseUrl));
+        if ($fileName === '' || !str_contains($fileName, '.')) {
+            return 'database.sqlite';
+        }
+
+        return $fileName;
     }
 
     public function tenantDatabaseExists(string $tenantId): bool
