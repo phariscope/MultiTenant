@@ -16,19 +16,27 @@ final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInte
 
     /**
      * @param array<int|string, mixed> $parameters
+     *
+     * @return list<string>
      */
-    public function run(string $commandName, array $parameters = []): TenantConsoleProcessResult
+    public function buildCommand(string $commandName, array $parameters = []): array
     {
-        $command = array_merge(
+        return array_merge(
             [
                 $this->phpBinary,
                 $this->projectDir . '/bin/console',
                 $commandName,
             ],
-            self::parametersToArgv($parameters),
+            $this->parametersToArgv($parameters),
         );
+    }
 
-        $process = new Process($command, $this->projectDir);
+    /**
+     * @param array<int|string, mixed> $parameters
+     */
+    public function run(string $commandName, array $parameters = []): TenantConsoleProcessResult
+    {
+        $process = new Process($this->buildCommand($commandName, $parameters), $this->projectDir);
         $process->setTimeout(null);
         $process->run();
 
@@ -43,7 +51,7 @@ final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInte
      *
      * @return list<string>
      */
-    private static function parametersToArgv(array $parameters): array
+    private function parametersToArgv(array $parameters): array
     {
         $argv = [];
 
@@ -56,8 +64,10 @@ final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInte
                 continue;
             }
 
+            $optionName = ltrim($key, '-');
+
             if ($value === true) {
-                $argv[] = '--' . $key;
+                $argv[] = '--' . $optionName;
 
                 continue;
             }
@@ -66,7 +76,7 @@ final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInte
                 continue;
             }
 
-            $argv[] = '--' . $key . '=' . (string) $value;
+            $argv[] = '--' . $optionName . '=' . (string) $value;
         }
 
         return $argv;

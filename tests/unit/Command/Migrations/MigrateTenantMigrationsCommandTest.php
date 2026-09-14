@@ -6,8 +6,8 @@ namespace Phariscope\MultiTenant\Tests\Command\Migrations;
 
 use Phariscope\MultiTenant\Command\Migrations\MigrateTenantMigrationsCommand;
 use Phariscope\MultiTenant\Command\Migrations\TenantMigrationDatabaseInspector;
-use Phariscope\MultiTenant\Command\TenantConsoleProcessResult;
-use Phariscope\MultiTenant\Command\TenantConsoleProcessRunnerInterface;
+use Phariscope\MultiTenant\Tests\Command\PreparesTenantSqliteFixture;
+use Phariscope\MultiTenant\Tests\Command\RecordingTenantConsoleProcessRunner;
 use Phariscope\MultiTenant\Tests\Share\IsolatesDataPathEnvTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Application;
@@ -16,15 +16,26 @@ use Symfony\Component\Console\Tester\CommandTester;
 final class MigrateTenantMigrationsCommandTest extends TestCase
 {
     use IsolatesDataPathEnvTrait;
+    use PreparesTenantSqliteFixture;
+
+    /** @var mixed */
+    private $savedDatabaseUrl;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->savedDatabaseUrl = $_ENV['DATABASE_URL'] ?? null;
+        unset($_ENV['DATABASE_URL']);
         $this->setUpIsolatedWritableDataPath();
     }
 
     protected function tearDown(): void
     {
+        if ($this->savedDatabaseUrl === null) {
+            unset($_ENV['DATABASE_URL']);
+        } else {
+            $_ENV['DATABASE_URL'] = $this->savedDatabaseUrl;
+        }
         $this->tearDownIsolatedDataPath();
         parent::tearDown();
     }
@@ -32,22 +43,9 @@ final class MigrateTenantMigrationsCommandTest extends TestCase
     public function testMigrateDelegatesToDoctrineMigrationsMigrate(): void
     {
         // Arrange
-        $runner = $this->createMock(TenantConsoleProcessRunnerInterface::class);
-        $runner->expects($this->once())
-            ->method('run')
-            ->with(
-                'doctrine:migrations:migrate',
-                [
-                    '--no-interaction' => true,
-                    '--tenant_id' => 'tenant-abc',
-                ]
-            )
-            ->willReturn(new TenantConsoleProcessResult(0, 'OK'));
-
-        $inspector = $this->createMock(TenantMigrationDatabaseInspector::class);
-        $inspector->method('tenantDatabaseExists')->willReturn(true);
-
-        $commandTester = $this->createCommandTester(new MigrateTenantMigrationsCommand($runner, $inspector));
+        $this->createTenantSqliteDatabase('tenant-abc');
+        $runner = new RecordingTenantConsoleProcessRunner(0, 'OK');
+        $commandTester = $this->createCommandTester($runner);
 
         // Act
         $commandTester->execute([
@@ -57,18 +55,22 @@ final class MigrateTenantMigrationsCommandTest extends TestCase
         // Assert
         $this->assertSame(0, $commandTester->getStatusCode());
         $this->assertStringContainsString('Migrations applied', $commandTester->getDisplay());
+        $this->assertSame(
+            [
+                [
+                    'command' => 'doctrine:migrations:migrate',
+                    'parameters' => ['no-interaction' => true],
+                ],
+            ],
+            $runner->calls
+        );
     }
 
     public function testMigrateFailsWhenDatabaseFileIsMissing(): void
     {
         // Arrange
-        $runner = $this->createMock(TenantConsoleProcessRunnerInterface::class);
-        $runner->expects($this->never())->method('run');
-
-        $inspector = $this->createMock(TenantMigrationDatabaseInspector::class);
-        $inspector->method('tenantDatabaseExists')->willReturn(false);
-
-        $commandTester = $this->createCommandTester(new MigrateTenantMigrationsCommand($runner, $inspector));
+        $runner = new RecordingTenantConsoleProcessRunner();
+        $commandTester = $this->createCommandTester($runner);
 
         // Act
         $commandTester->execute([
@@ -78,12 +80,16 @@ final class MigrateTenantMigrationsCommandTest extends TestCase
         // Assert
         $this->assertSame(1, $commandTester->getStatusCode());
         $this->assertStringContainsString('database file not found', $commandTester->getDisplay());
+        $this->assertSame([], $runner->calls);
     }
 
-    private function createCommandTester(MigrateTenantMigrationsCommand $command): CommandTester
+    private function createCommandTester(RecordingTenantConsoleProcessRunner $runner): CommandTester
     {
         $application = new Application();
-        $application->add($command);
+        $application->add(new MigrateTenantMigrationsCommand(
+            $runner,
+            new TenantMigrationDatabaseInspector(),
+        ));
 
         return new CommandTester($application->find('tenant:migrations:migrate'));
     }

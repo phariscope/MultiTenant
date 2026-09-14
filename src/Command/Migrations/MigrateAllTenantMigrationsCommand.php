@@ -56,7 +56,7 @@ final class MigrateAllTenantMigrationsCommand extends Command
 
             $commandName = $dryRun ? 'tenant:migrations:status' : 'tenant:migrations:migrate';
             $result = $this->processRunner->run($commandName, [
-                '--tenant_id' => $tenantId,
+                'tenant_id' => $tenantId,
             ]);
 
             if ($result->output !== '') {

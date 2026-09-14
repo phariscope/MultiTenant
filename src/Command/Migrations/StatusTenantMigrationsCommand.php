@@ -56,9 +56,7 @@ final class StatusTenantMigrationsCommand extends Command
             return Command::FAILURE;
         }
 
-        $result = $this->processRunner->run('doctrine:migrations:status', [
-            '--tenant_id' => $tenantId,
-        ]);
+        $result = $this->processRunner->run('doctrine:migrations:status', []);
 
         if ($result->output !== '') {
             $output->write($result->output);

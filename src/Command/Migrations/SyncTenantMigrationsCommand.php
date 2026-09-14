@@ -81,10 +81,9 @@ final class SyncTenantMigrationsCommand extends Command
         }
 
         $result = $this->processRunner->run('doctrine:migrations:version', [
-            '--add' => true,
-            '--all' => true,
-            '--no-interaction' => true,
-            '--tenant_id' => $tenantId,
+            'add' => true,
+            'all' => true,
+            'no-interaction' => true,
         ]);
 
         if ($result->output !== '') {
