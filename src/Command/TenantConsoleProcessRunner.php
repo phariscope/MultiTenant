@@ -28,7 +28,7 @@ final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInte
                 $this->projectDir . '/bin/console',
                 $commandName,
             ],
-            $this->parametersToArgv($parameters),
+            $this->parametersToArgv($commandName, $parameters),
         );
     }
 
@@ -40,7 +40,7 @@ final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInte
         $process = new Process(
             $this->buildCommand($commandName, $parameters),
             $this->projectDir,
-            $this->unscopedTenantEnvironment(),
+            $this->subprocessEnvironment($commandName, $parameters),
         );
         $process->setTimeout(null);
         $process->run();
@@ -56,9 +56,10 @@ final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInte
      *
      * @return list<string>
      */
-    private function parametersToArgv(array $parameters): array
+    private function parametersToArgv(string $commandName, array $parameters): array
     {
         $argv = [];
+        $omitTenantCliOptions = str_starts_with($commandName, 'doctrine:');
 
         foreach ($parameters as $key => $value) {
             if (is_int($key)) {
@@ -70,6 +71,13 @@ final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInte
             }
 
             $optionName = ltrim($key, '-');
+
+            if (
+                $omitTenantCliOptions
+                && ($optionName === 'tenant_id' || $optionName === 'tenant_shortname')
+            ) {
+                continue;
+            }
 
             if ($value === true) {
                 $argv[] = '--' . $optionName;
@@ -91,7 +99,54 @@ final class TenantConsoleProcessRunner implements TenantConsoleProcessRunnerInte
     /**
      * Nested `bin/console` must start from the application DATA_PATH / DATABASE_URL,
      * not values already rewritten by the parent ContextTransformer.
+     * Doctrine commands have no --tenant_id option: pass the tenant via HTTP_X_TENANT_ID
+     * (already read by TenantManager / ContextTransformer).
      *
+     * @param array<int|string, mixed> $parameters
+     *
+     * @return array<string, string>
+     */
+    private function subprocessEnvironment(string $commandName, array $parameters): array
+    {
+        $env = $this->unscopedTenantEnvironment();
+
+        if (!str_starts_with($commandName, 'doctrine:')) {
+            return $env;
+        }
+
+        $tenantId = $this->scalarParameter($parameters, 'tenant_id');
+        if ($tenantId !== null) {
+            $env['HTTP_X_TENANT_ID'] = $tenantId;
+        }
+
+        $tenantShortname = $this->scalarParameter($parameters, 'tenant_shortname');
+        if ($tenantShortname !== null) {
+            $env['HTTP_X_TENANT_SHORTNAME'] = $tenantShortname;
+        }
+
+        return $env;
+    }
+
+    /**
+     * @param array<int|string, mixed> $parameters
+     */
+    private function scalarParameter(array $parameters, string $name): ?string
+    {
+        foreach ([$name, '--' . $name] as $key) {
+            if (!isset($parameters[$key]) || !is_scalar($parameters[$key]) || $parameters[$key] === true) {
+                continue;
+            }
+
+            $value = trim((string) $parameters[$key]);
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @return array<string, string>
      */
     private function unscopedTenantEnvironment(): array

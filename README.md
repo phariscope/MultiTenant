@@ -142,7 +142,7 @@ bin/console tenant:schema:update --tenant_id tenantID1234 --force
 
 # Tenant migrations (Doctrine Migrations)
 
-Host applications must install `doctrine/doctrine-migrations-bundle`. Commands delegate to `doctrine:migrations:*` with `--tenant_id` (same `ContextTransformer` as other `tenant:*` commands).
+Host applications must install `doctrine/doctrine-migrations-bundle`. Commands `tenant:migrations:*` accept `--tenant_id`. Nested `doctrine:migrations:*` subprocesses do **not** receive that CLI option (Doctrine does not define it). The tenant is passed as `HTTP_X_TENANT_ID`, which `ContextTransformer` / `TenantManager` already read. Nested processes also receive the application-root `DATA_PATH` and SQLite `DATABASE_URL`, not values already rewritten by the parent process.
 
 **New tenant** (after `tenant:schema:create`):
 

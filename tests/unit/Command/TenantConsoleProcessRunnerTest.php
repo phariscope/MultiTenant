@@ -58,11 +58,11 @@ final class TenantConsoleProcessRunnerTest extends TestCase
                 '/app/bin/console',
                 'doctrine:migrations:migrate',
                 '--no-interaction',
-                '--tenant_id',
-                'tenant-abc',
             ],
             $command
         );
+        $this->assertNotContains('--tenant_id', $command);
+        $this->assertNotContains('tenant-abc', $command);
     }
 
     public function testBuildCommandDoesNotDoubleDashOptionKeys(): void
@@ -87,6 +87,68 @@ final class TenantConsoleProcessRunnerTest extends TestCase
             $command
         );
         $this->assertNotContains('----tenant_id=cl_demo10_yve5d6q', $command);
+    }
+
+    public function testRunPassesTenantIdViaHttpXTenantIdForDoctrineCommands(): void
+    {
+        // Arrange — Doctrine has no --tenant_id option; ContextTransformer reads HTTP_X_TENANT_ID
+        $this->setEnv('DATA_PATH', '/tmp/app');
+        $this->setEnv('DATABASE_URL', 'sqlite:////tmp/app/database/app.sqlite');
+        $this->fakeProjectDir = sys_get_temp_dir() . '/mt-console-runner-' . uniqid('', true);
+        mkdir($this->fakeProjectDir . '/bin', 0775, true);
+        file_put_contents(
+            $this->fakeProjectDir . '/bin/console',
+            <<<'PHP'
+<?php
+fwrite(STDOUT, implode("\n", $argv) . "\n");
+fwrite(STDOUT, 'HTTP_X_TENANT_ID=' . (getenv('HTTP_X_TENANT_ID') ?: '') . "\n");
+exit(0);
+PHP
+        );
+        $runner = new TenantConsoleProcessRunner($this->fakeProjectDir, \PHP_BINARY);
+
+        // Act
+        $result = $runner->run('doctrine:migrations:migrate', [
+            'no-interaction' => true,
+            'tenant_id' => 'cl_demo10_5eqi54i',
+        ]);
+
+        // Assert
+        $this->assertSame(0, $result->exitCode, $result->output);
+        $this->assertStringContainsString('doctrine:migrations:migrate', $result->output);
+        $this->assertStringContainsString('--no-interaction', $result->output);
+        $this->assertStringNotContainsString('--tenant_id', $result->output);
+        $this->assertStringContainsString('HTTP_X_TENANT_ID=cl_demo10_5eqi54i', $result->output);
+    }
+
+    public function testRunDoesNotSetHttpXTenantIdForTenantCommands(): void
+    {
+        // Arrange
+        $this->setEnv('DATA_PATH', '/tmp/app');
+        $this->setEnv('DATABASE_URL', 'sqlite:////tmp/app/database/app.sqlite');
+        $this->fakeProjectDir = sys_get_temp_dir() . '/mt-console-runner-' . uniqid('', true);
+        mkdir($this->fakeProjectDir . '/bin', 0775, true);
+        file_put_contents(
+            $this->fakeProjectDir . '/bin/console',
+            <<<'PHP'
+<?php
+fwrite(STDOUT, implode("\n", $argv) . "\n");
+fwrite(STDOUT, 'HTTP_X_TENANT_ID=' . (getenv('HTTP_X_TENANT_ID') ?: '') . "\n");
+exit(0);
+PHP
+        );
+        $runner = new TenantConsoleProcessRunner($this->fakeProjectDir, \PHP_BINARY);
+
+        // Act
+        $result = $runner->run('tenant:migrations:migrate', [
+            'tenant_id' => 'cl_demo10_5eqi54i',
+        ]);
+
+        // Assert
+        $this->assertSame(0, $result->exitCode, $result->output);
+        $this->assertStringContainsString('--tenant_id', $result->output);
+        $this->assertStringContainsString('cl_demo10_5eqi54i', $result->output);
+        $this->assertStringContainsString("HTTP_X_TENANT_ID=\n", $result->output . "\n");
     }
 
     public function testRunPassesApplicationDataRootWhenParentDataPathIsTenantScopedAndDatabaseUrlIsRoot(): void
