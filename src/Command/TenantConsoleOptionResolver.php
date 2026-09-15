@@ -11,8 +11,10 @@ use Symfony\Component\Console\Input\InputInterface;
 
 final class TenantConsoleOptionResolver
 {
-    public static function resolveTenantId(InputInterface $input): string
-    {
+    public static function resolveTenantId(
+        InputInterface $input,
+        bool $registerShortnameMapping = true,
+    ): string {
         $id = $input->getOption('tenant_id');
         $shortname = $input->getOption('tenant_shortname');
         $tenantIdString = is_string($id) ? trim($id) : '';
@@ -24,6 +26,10 @@ final class TenantConsoleOptionResolver
 
         if ($tenantIdString === '') {
             throw new InvalidArgumentException('--tenant_shortname requires --tenant_id.');
+        }
+
+        if (!$registerShortnameMapping) {
+            return $tenantIdString;
         }
 
         $registry = TenantShortnameRegistry::tryCreateFromEnv();

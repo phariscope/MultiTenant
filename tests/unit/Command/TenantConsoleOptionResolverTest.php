@@ -58,6 +58,24 @@ class TenantConsoleOptionResolverTest extends TestCase
         $this->assertSame('t1', $registry->resolveTenantId('t1'));
     }
 
+    public function testDoesNotOverwriteRegistryWhenShortnameRegistrationIsDisabled(): void
+    {
+        // Arrange — fixtures ship demo → cl_demo_67mzxiq; migrate-all must not replace demo with tenant_id
+        $this->isolatedDataPathDir = sys_get_temp_dir() . '/mt-tcor-no-reg-' . uniqid('', true);
+        $this->setDataPathEnv($this->isolatedDataPathDir);
+        $registry = $this->registryForIsolatedDataPath();
+        $registry->register('cl_demo_67mzxiq', 'demo');
+        $input = new ArrayInput(['--tenant_id' => 'cl_demo_67mzxiq'], $this->definition());
+
+        // Act
+        $resolved = TenantConsoleOptionResolver::resolveTenantId($input, registerShortnameMapping: false);
+
+        // Assert
+        $this->assertSame('cl_demo_67mzxiq', $resolved);
+        $this->assertSame('cl_demo_67mzxiq', $registry->resolveTenantId('demo'));
+        $this->assertNull($registry->resolveTenantId('cl_demo_67mzxiq'));
+    }
+
     public function testRegistersMappingWhenBothOptionsProvided(): void
     {
         // Arrange
