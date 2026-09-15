@@ -38,10 +38,7 @@ final class StatusTenantMigrationsCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
-            $tenantId = TenantConsoleOptionResolver::resolveTenantId(
-                $input,
-                registerShortnameMapping: false,
-            );
+            $tenantId = TenantConsoleOptionResolver::resolveTenantId($input);
         } catch (\Throwable $e) {
             $output->writeln('<error>' . $e->getMessage() . '</error>');
 

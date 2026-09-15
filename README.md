@@ -182,7 +182,8 @@ Supported inputs mirror `tenant_id`: query/body parameters, session keys, cookie
 When creating or provisioning a tenant, the registry is updated in `tenants.sqlite`:
 
 - **`CreateTenantService`**: always writes a mapping (`DATA_PATH` required). If `tenantShortname` is omitted, the shortname stored equals `tenant_id`. The response includes the **final** shortname assigned.
-- **Bundle console commands** (`tenant:database:create`, `tenant:schema:create`, `tenant:schema:update`): `--tenant_id` is **required**. Optional `--tenant_shortname` registers a custom slug; if omitted, the shortname stored equals `tenant_id`. `--tenant_shortname` alone is rejected.
+- **Provisioning console commands** (`tenant:database:create`, `tenant:schema:create`): `--tenant_id` is **required**. Optional `--tenant_shortname` registers a custom slug; if omitted, the shortname stored equals `tenant_id`. `--tenant_shortname` alone is rejected.
+- **Idempotent console commands** (`tenant:schema:update`, `tenant:migrations:migrate`, `tenant:migrations:status`, `tenant:migrations:sync`): parse `--tenant_id` only. They **do not** write to `tenants.sqlite`.
 - **`tenant:shortname:show`**: read-only lookup from `tenant_id` to the registered shortname (requires `DATA_PATH` and an existing row in `tenants.sqlite`).
 - **`TenantShortnameRegistry::unregister($tenantId)`**: removes the mapping for a tenant (idempotent).
 - **`DeleteTenantService` / `tenant:delete --tenant_id=…`**: deletes `{DATA_PATH}/tenants/{tenantId}/` **and** unregisters the shortname. Host apps should use this instead of removing tenant folders or writing SQL against `tenants.sqlite` themselves. Works even when `DATA_PATH` was narrowed by `ContextTransformer` (uses the application data root).

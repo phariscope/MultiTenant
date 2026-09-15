@@ -11,10 +11,8 @@ use Symfony\Component\Console\Input\InputInterface;
 
 final class TenantConsoleOptionResolver
 {
-    public static function resolveTenantId(
-        InputInterface $input,
-        bool $registerShortnameMapping = true,
-    ): string {
+    public static function resolveTenantId(InputInterface $input): string
+    {
         $id = $input->getOption('tenant_id');
         $shortname = $input->getOption('tenant_shortname');
         $tenantIdString = is_string($id) ? trim($id) : '';
@@ -28,10 +26,14 @@ final class TenantConsoleOptionResolver
             throw new InvalidArgumentException('--tenant_shortname requires --tenant_id.');
         }
 
-        if (!$registerShortnameMapping) {
-            return $tenantIdString;
-        }
+        return $tenantIdString;
+    }
 
+    /**
+     * @return non-empty-string
+     */
+    public static function registerShortnameFromInput(InputInterface $input, string $tenantId): string
+    {
         $registry = TenantShortnameRegistry::tryCreateFromEnv();
         if ($registry === null) {
             throw new RuntimeException(
@@ -39,9 +41,10 @@ final class TenantConsoleOptionResolver
             );
         }
 
-        $shortnameToRegister = $shortnameString !== '' ? $shortnameString : $tenantIdString;
-        $registry->registerUniqueShortname($tenantIdString, $shortnameToRegister);
+        $shortname = $input->getOption('tenant_shortname');
+        $shortnameString = is_string($shortname) ? trim($shortname) : '';
+        $shortnameToRegister = $shortnameString !== '' ? $shortnameString : $tenantId;
 
-        return $tenantIdString;
+        return $registry->registerUniqueShortname($tenantId, $shortnameToRegister);
     }
 }
