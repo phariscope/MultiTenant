@@ -12,10 +12,18 @@ final class RecordingTenantConsoleProcessRunner implements TenantConsoleProcessR
     /** @var list<array{command: string, parameters: array<int|string, mixed>}> */
     public array $calls = [];
 
+    /** @var array<string, int> */
+    private readonly array $exitCodeByCommand;
+
+    /**
+     * @param array<string, int> $exitCodeByCommand
+     */
     public function __construct(
         private readonly int $exitCode = 0,
         private readonly string $output = '',
+        array $exitCodeByCommand = [],
     ) {
+        $this->exitCodeByCommand = $exitCodeByCommand;
     }
 
     /**
@@ -28,6 +36,9 @@ final class RecordingTenantConsoleProcessRunner implements TenantConsoleProcessR
             'parameters' => $parameters,
         ];
 
-        return new TenantConsoleProcessResult($this->exitCode, $this->output);
+        return new TenantConsoleProcessResult(
+            $this->exitCodeByCommand[$commandName] ?? $this->exitCode,
+            $this->output,
+        );
     }
 }

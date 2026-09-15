@@ -150,7 +150,7 @@ Host applications must install `doctrine/doctrine-migrations-bundle`. Commands `
 bin/console tenant:migrations:sync --tenant_id tenantID1234
 ```
 
-Marks all migration versions as executed without replaying SQL (schema already matches current mapping).
+Marks all migration versions as executed without replaying SQL (schema already matches current mapping). Internally this runs `doctrine:migrations:sync-metadata-storage` (creates `doctrine_migration_versions` after `schema:create`) then `doctrine:migrations:version --add --all`.
 
 **Existing tenant** (schema evolution in production):
 

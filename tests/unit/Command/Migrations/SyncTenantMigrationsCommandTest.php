@@ -58,6 +58,13 @@ final class SyncTenantMigrationsCommandTest extends TestCase
         $this->assertSame(
             [
                 [
+                    'command' => 'doctrine:migrations:sync-metadata-storage',
+                    'parameters' => [
+                        'no-interaction' => true,
+                        'tenant_id' => 'tenant-abc',
+                    ],
+                ],
+                [
                     'command' => 'doctrine:migrations:version',
                     'parameters' => [
                         'add' => true,
@@ -104,8 +111,32 @@ final class SyncTenantMigrationsCommandTest extends TestCase
 
         // Assert
         $this->assertSame(0, $commandTester->getStatusCode());
+        $this->assertCount(2, $runner->calls);
+        $this->assertSame('doctrine:migrations:sync-metadata-storage', $runner->calls[0]['command']);
+        $this->assertSame('doctrine:migrations:version', $runner->calls[1]['command']);
+    }
+
+    public function testSyncStopsWhenMetadataStorageSyncFails(): void
+    {
+        // Arrange
+        $this->createTenantSqliteDatabase('tenant-abc');
+        $runner = new RecordingTenantConsoleProcessRunner(
+            0,
+            '',
+            ['doctrine:migrations:sync-metadata-storage' => 1],
+        );
+        $commandTester = $this->createCommandTester($runner);
+
+        // Act
+        $commandTester->execute([
+            '--tenant_id' => 'tenant-abc',
+        ]);
+
+        // Assert
+        $this->assertSame(1, $commandTester->getStatusCode());
+        $this->assertStringContainsString('metadata storage sync failed', $commandTester->getDisplay());
         $this->assertCount(1, $runner->calls);
-        $this->assertSame('doctrine:migrations:version', $runner->calls[0]['command']);
+        $this->assertSame('doctrine:migrations:sync-metadata-storage', $runner->calls[0]['command']);
     }
 
     private function createCommandTester(RecordingTenantConsoleProcessRunner $runner): CommandTester
