@@ -42,11 +42,28 @@ class TenantConsoleOptionResolverTest extends TestCase
         ]);
     }
 
-    public function testRegistersAndReturnsTenantIdWhenOnlyTenantIdProvided(): void
+    public function testResolveTenantIdReturnsIdWithoutWritingRegistry(): void
+    {
+        // Arrange — fixtures ship demo → cl_demo_67mzxiq; migrate must not replace demo with tenant_id
+        $this->isolatedDataPathDir = sys_get_temp_dir() . '/mt-tcor-no-reg-' . uniqid('', true);
+        $this->setDataPathEnv($this->isolatedDataPathDir);
+        $registry = $this->registryForIsolatedDataPath();
+        $registry->register('cl_demo_67mzxiq', 'demo');
+        $input = new ArrayInput(['--tenant_id' => 'cl_demo_67mzxiq'], $this->definition());
+
+        // Act
+        $resolved = TenantConsoleOptionResolver::resolveTenantId($input);
+
+        // Assert
+        $this->assertSame('cl_demo_67mzxiq', $resolved);
+        $this->assertSame('cl_demo_67mzxiq', $registry->resolveTenantId('demo'));
+        $this->assertNull($registry->resolveTenantId('cl_demo_67mzxiq'));
+    }
+
+    public function testResolveTenantIdSucceedsWithoutDataPath(): void
     {
         // Arrange
-        $this->isolatedDataPathDir = sys_get_temp_dir() . '/mt-tcor-id-' . uniqid('', true);
-        $this->setDataPathEnv($this->isolatedDataPathDir);
+        $this->clearDataPathEnv();
         $input = new ArrayInput(['--tenant_id' => 't1'], $this->definition());
 
         // Act
@@ -54,14 +71,12 @@ class TenantConsoleOptionResolverTest extends TestCase
 
         // Assert
         $this->assertSame('t1', $resolved);
-        $registry = $this->registryForIsolatedDataPath();
-        $this->assertSame('t1', $registry->resolveTenantId('t1'));
     }
 
-    public function testRegistersMappingWhenBothOptionsProvided(): void
+    public function testResolveTenantIdIgnoresShortnameAndDoesNotWrite(): void
     {
         // Arrange
-        $this->isolatedDataPathDir = sys_get_temp_dir() . '/mt-tcor-both-' . uniqid('', true);
+        $this->isolatedDataPathDir = sys_get_temp_dir() . '/mt-tcor-ignore-sn-' . uniqid('', true);
         $this->setDataPathEnv($this->isolatedDataPathDir);
         $input = new ArrayInput([
             '--tenant_id' => 'real-tenant-id',
@@ -74,10 +89,46 @@ class TenantConsoleOptionResolverTest extends TestCase
         // Assert
         $this->assertSame('real-tenant-id', $resolved);
         $registry = $this->registryForIsolatedDataPath();
+        $this->assertNull($registry->resolveTenantId('acme'));
+        $this->assertNull($registry->resolveTenantId('real-tenant-id'));
+    }
+
+    public function testRegisterShortnameFromInputUsesTenantIdWhenShortnameOmitted(): void
+    {
+        // Arrange
+        $this->isolatedDataPathDir = sys_get_temp_dir() . '/mt-tcor-id-' . uniqid('', true);
+        $this->setDataPathEnv($this->isolatedDataPathDir);
+        $input = new ArrayInput(['--tenant_id' => 't1'], $this->definition());
+
+        // Act
+        $registered = TenantConsoleOptionResolver::registerShortnameFromInput($input, 't1');
+
+        // Assert
+        $this->assertSame('t1', $registered);
+        $registry = $this->registryForIsolatedDataPath();
+        $this->assertSame('t1', $registry->resolveTenantId('t1'));
+    }
+
+    public function testRegisterShortnameFromInputRegistersMappingWhenBothOptionsProvided(): void
+    {
+        // Arrange
+        $this->isolatedDataPathDir = sys_get_temp_dir() . '/mt-tcor-both-' . uniqid('', true);
+        $this->setDataPathEnv($this->isolatedDataPathDir);
+        $input = new ArrayInput([
+            '--tenant_id' => 'real-tenant-id',
+            '--tenant_shortname' => 'acme',
+        ], $this->definition());
+
+        // Act
+        $registered = TenantConsoleOptionResolver::registerShortnameFromInput($input, 'real-tenant-id');
+
+        // Assert
+        $this->assertSame('acme', $registered);
+        $registry = $this->registryForIsolatedDataPath();
         $this->assertSame('real-tenant-id', $registry->resolveTenantId('acme'));
     }
 
-    public function testRegistersUniqueSuffixWhenShortnameTaken(): void
+    public function testRegisterShortnameFromInputAllocatesUniqueSuffixWhenShortnameTaken(): void
     {
         // Arrange
         $this->isolatedDataPathDir = sys_get_temp_dir() . '/mt-tcor-collision-' . uniqid('', true);
@@ -90,10 +141,10 @@ class TenantConsoleOptionResolverTest extends TestCase
         ], $this->definition());
 
         // Act
-        $resolved = TenantConsoleOptionResolver::resolveTenantId($input);
+        $registered = TenantConsoleOptionResolver::registerShortnameFromInput($input, 'new-tenant-id');
 
         // Assert
-        $this->assertSame('new-tenant-id', $resolved);
+        $this->assertSame('acme-2', $registered);
         $this->assertSame('new-tenant-id', $registry->resolveTenantId('acme-2'));
     }
 
@@ -123,7 +174,7 @@ class TenantConsoleOptionResolverTest extends TestCase
         // Assert - PHPUnit verifies the exception
     }
 
-    public function testRegistersInGlobalRegistryWhenDataPathIsTenantScoped(): void
+    public function testRegisterShortnameFromInputUsesGlobalRegistryWhenDataPathIsTenantScoped(): void
     {
         // Arrange
         $this->isolatedDataPathDir = sys_get_temp_dir() . '/mt-tcor-scoped-root-' . uniqid('', true);
@@ -135,16 +186,16 @@ class TenantConsoleOptionResolverTest extends TestCase
         ], $this->definition());
 
         // Act
-        $resolved = TenantConsoleOptionResolver::resolveTenantId($input);
+        $registered = TenantConsoleOptionResolver::registerShortnameFromInput($input, 'campus26');
 
         // Assert
-        $this->assertSame('campus26', $resolved);
+        $this->assertSame('c26', $registered);
         $registry = $this->registryForIsolatedDataPath();
         $this->assertSame('campus26', $registry->resolveTenantId('c26'));
         $this->assertFileDoesNotExist($scopedPath . '/tenants/tenants.sqlite');
     }
 
-    public function testThrowsWhenDataPathMissing(): void
+    public function testRegisterShortnameFromInputThrowsWhenDataPathMissing(): void
     {
         // Arrange
         $this->clearDataPathEnv();
@@ -153,7 +204,7 @@ class TenantConsoleOptionResolverTest extends TestCase
         $this->expectExceptionMessage('DATA_PATH must be set to register tenant shortname mapping');
 
         // Act
-        TenantConsoleOptionResolver::resolveTenantId($input);
+        TenantConsoleOptionResolver::registerShortnameFromInput($input, 't1');
 
         // Assert - PHPUnit verifies the exception
     }

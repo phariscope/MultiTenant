@@ -38,6 +38,7 @@ class CreateTenantSchemaCommand extends Command
     {
         try {
             $tenantId = TenantConsoleOptionResolver::resolveTenantId($input);
+            TenantConsoleOptionResolver::registerShortnameFromInput($input, $tenantId);
         } catch (\Throwable $e) {
             $output->writeln('<error>' . $e->getMessage() . '</error>');
 

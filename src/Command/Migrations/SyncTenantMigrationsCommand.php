@@ -80,18 +80,33 @@ final class SyncTenantMigrationsCommand extends Command
             return Command::FAILURE;
         }
 
-        $result = $this->processRunner->run('doctrine:migrations:version', [
-            'add' => true,
-            'all' => true,
-            'no-interaction' => true,
-            'tenant_id' => $tenantId,
-        ]);
+        $metadataResult = $this->runDoctrineCommand(
+            $output,
+            'doctrine:migrations:sync-metadata-storage',
+            [
+                'no-interaction' => true,
+                'tenant_id' => $tenantId,
+            ],
+        );
+        if ($metadataResult !== Command::SUCCESS) {
+            $output->writeln(
+                sprintf('<error>Migration metadata storage sync failed for tenant "%s".</error>', $tenantId)
+            );
 
-        if ($result->output !== '') {
-            $output->write($result->output);
+            return Command::FAILURE;
         }
 
-        if ($result->exitCode !== 0) {
+        $versionResult = $this->runDoctrineCommand(
+            $output,
+            'doctrine:migrations:version',
+            [
+                'add' => true,
+                'all' => true,
+                'no-interaction' => true,
+                'tenant_id' => $tenantId,
+            ],
+        );
+        if ($versionResult !== Command::SUCCESS) {
             $output->writeln(
                 sprintf('<error>Migration sync failed for tenant "%s".</error>', $tenantId)
             );
@@ -102,5 +117,18 @@ final class SyncTenantMigrationsCommand extends Command
         $output->writeln('<info>Migration history synced for tenant "' . $tenantId . '".</info>');
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * @param array<int|string, mixed> $parameters
+     */
+    private function runDoctrineCommand(OutputInterface $output, string $commandName, array $parameters): int
+    {
+        $result = $this->processRunner->run($commandName, $parameters);
+        if ($result->output !== '') {
+            $output->write($result->output);
+        }
+
+        return $result->exitCode === 0 ? Command::SUCCESS : Command::FAILURE;
     }
 }
